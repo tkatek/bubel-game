@@ -1,0 +1,230 @@
+// DOM HUD + screens. All panel content is live state rendered in readable
+// HTML above the painted artwork — the PNGs are decoration only.
+
+import { ASSETS, BUBBLE_COLORS, COLOR_NAMES } from './assets.js';
+import { fmtTime, clamp } from './util.js';
+import { MAX_LEVELS } from './storage.js';
+
+const SCREENS = ['screen-loading', 'screen-menu', 'screen-levels', 'screen-howto', 'screen-pause',
+  'screen-complete', 'screen-gameover'];
+
+export class UI {
+  constructor(root) {
+    this.root = root;
+    const q = (id) => root.querySelector(`#${id}`);
+    this.el = {
+      loadText: q('loadText'), loadFill: q('loadFill'),
+      qText: q('qText'), qTextM: q('qTextM'), qOpts: root.querySelector('#qOpts'), qOptsM: root.querySelector('#qOptsM'),
+      qColorChip: q('qColorChip'), qColorName: q('qColorName'), qColorDot: root.querySelector('.bpe-q-color-dot'),
+      mColorChip: q('mColorChip'), mColorName: q('mColorName'),
+      levelNum: q('levelNum'), levelCefr: q('levelCefr'), levelNumM: q('levelNumM'), levelCefrM: q('levelCefrM'),
+      progText: q('progText'), progSegs: q('progSegs'), progTextM: q('progTextM'), progSegsM: q('progSegsM'),
+      hearts: q('hearts'), heartsM: q('heartsM'),
+      comboVal: q('comboVal'), comboFill: q('comboFill'), comboValM: q('comboValM'),
+      timerVal: q('timerVal'), timerValM: q('timerValM'),
+      scoreVal: q('scoreVal'), scoreValM: q('scoreValM'),
+      nextBubble: q('nextBubble'), nextBubbleM: q('nextBubbleM'),
+      puBadges: {
+        rainbow: [q('puBadgeRainbow'), q('puBadgeRainbowM')],
+        heart: [q('puBadgeHeart'), q('puBadgeHeartM')],
+        aim: [q('puBadgeAim'), q('puBadgeAimM')],
+      },
+      puButtons: Array.from(root.querySelectorAll('.bpe-pu')),
+      toast: q('toast'), toastTitle: q('toastTitle'), toastBody: q('toastBody'),
+      levelGrid: q('levelGrid'), totalStars: q('totalStars'),
+      pauseInfo: q('pauseInfo'),
+      completeTitle: q('completeTitle'), completeSub: q('completeSub'), completeStars: q('completeStars'),
+      resScore: q('resScore'), resQuestions: q('resQuestions'), resMistakes: q('resMistakes'), resTime: q('resTime'),
+      gameoverSub: q('gameoverSub'), goTip: q('goTip'),
+      btnPlayLabel: q('btnPlayLabel'),
+      puPopover: q('puPopover'), btnPuDock: q('btnPuDock'), puBadgeDock: q('puBadgeDock'),
+      soundMenuIcon: q('soundMenuIcon'), soundPauseIcon: q('soundPauseIcon'),
+    };
+    this.toastTimer = 0;
+    this.bubbleUrl = {}; // per-colour CSS background URL
+    for (const c of BUBBLE_COLORS) this.bubbleUrl[c] = ASSETS.bubbles[c].url;
+  }
+
+  screen(name) {
+    for (const id of SCREENS) {
+      const el = this.root.querySelector(`#${id}`);
+      if (!el) continue;
+      const show = id === `screen-${name}`;
+      el.hidden = !show;
+      // hidden overlays must leave hit-testing: display none via [hidden]
+      el.style.display = show ? '' : 'none';
+    }
+    this.root.dataset.screen = name;
+  }
+
+  showGameChrome(show) {
+    this.root.dataset.ingame = show ? '1' : '0';
+  }
+
+  setLoad(pct, text) {
+    this.el.loadFill.style.width = `${Math.round(pct * 100)}%`;
+    if (text) this.el.loadText.textContent = text;
+  }
+
+  renderQuestion(state) {
+    const q = state.question;
+    const opts = state.optionsOrder;
+    const letter = { a: 'A', b: 'B', c: 'C', d: 'D' };
+    for (const [textEl, optsEl] of [[this.el.qText, this.el.qOpts], [this.el.qTextM, this.el.qOptsM]]) {
+      if (!textEl) continue;
+      textEl.textContent = q.prompt;
+      if (optsEl) {
+        optsEl.textContent = '';
+        for (const o of opts) {
+          const li = document.createElement('span');
+          li.className = 'bpe-q-opt';
+          li.innerHTML = `<b>${letter[o.id]}</b>${escapeHtml(o.text)}`;
+          optsEl.appendChild(li);
+        }
+      }
+    }
+    const cname = COLOR_NAMES[state.loadedColor];
+    this.el.qColorName.textContent = cname;
+    this.el.mColorName.textContent = cname;
+    this.el.qColorDot.style.background = `url(${this.bubbleUrl[state.loadedColor]}) center/cover`;
+  }
+
+  renderHud(state) {
+    this.el.levelNum.textContent = state.level;
+    this.el.levelCefr.textContent = this.cefrFor(state.level);
+    this.el.levelNumM.textContent = `Lv ${state.level}`;
+    this.el.levelCefrM.textContent = this.cefrFor(state.level);
+
+    const qn = clamp(state.qIndex + 1, 1, 4);
+    this.el.progText.textContent = `${qn} / 4`;
+    this.el.progTextM.textContent = `${qn} / 4`;
+    const segs = [this.el.progSegs, this.el.progSegsM];
+    for (const wrap of segs) {
+      if (!wrap) continue;
+      Array.from(wrap.children).forEach((seg, i) => {
+        seg.classList.toggle('is-done', i < state.qIndex);
+        seg.classList.toggle('is-now', i === state.qIndex);
+      });
+    }
+
+    const hearts = [this.el.hearts, this.el.heartsM];
+    for (const h of hearts) {
+      if (!h) continue;
+      if (h.children.length !== 3) {
+        h.textContent = '';
+        for (let i = 0; i < 3; i++) {
+          const img = document.createElement('img');
+          img.src = ASSETS.icons.heart;
+          img.alt = '';
+          img.draggable = false;
+          h.appendChild(img);
+        }
+      }
+      Array.from(h.children).forEach((img, i) => img.classList.toggle('is-lost', i >= state.lives));
+    }
+
+    this.el.comboVal.textContent = `×${state.combo + 1}`;
+    this.el.comboValM.textContent = `×${state.combo + 1}`;
+    this.el.comboFill.style.width = `${clamp(state.combo * 25, 0, 100)}%`;
+
+    this.el.scoreVal.textContent = state.score;
+    this.el.scoreValM.textContent = state.score;
+
+    this.el.nextBubble.style.backgroundImage = `url(${this.bubbleUrl[state.loadedColor]})`;
+    this.el.nextBubbleM.style.backgroundImage = `url(${this.bubbleUrl[state.loadedColor]})`;
+
+    // power-ups: counters + disabled states
+    const pu = state.powerups;
+    const busy = state.phase === 'PROJECTILE_FLYING' || state.phase === 'RESOLVING';
+    const setPu = (kind) => {
+      const n = pu[kind];
+      const left = kind === 'heart' && state.lives >= 3 ? 0 : n;
+      for (const badge of this.el.puBadges[kind]) if (badge) badge.textContent = left;
+      const usable = n > 0 && !busy && (kind !== 'heart' || state.lives < 3);
+      for (const btn of this.el.puButtons) {
+        if (btn.dataset.pu === kind) {
+          btn.disabled = !usable;
+          btn.classList.toggle('is-active', (kind === 'rainbow' && state.rainbowArmed) || (kind === 'aim' && state.aimBoost));
+        }
+      }
+    };
+    setPu('rainbow'); setPu('heart'); setPu('aim');
+    this.el.puBadgeDock.textContent = pu.rainbow + pu.heart + pu.aim;
+  }
+
+  renderTimer(seconds) {
+    const t = fmtTime(seconds);
+    this.el.timerVal.textContent = t;
+    this.el.timerValM.textContent = t;
+  }
+
+  cefrFor(level) { return ['A1', 'A1', 'A1', 'A2', 'A2', 'A2', 'B1', 'B1', 'B1', 'B2', 'B2', 'B2', 'C1', 'C1', 'C2'][level - 1]; }
+
+  toast(title, body, ms = 1900) {
+    this.el.toastTitle.textContent = title;
+    this.el.toastBody.textContent = body;
+    this.el.toast.hidden = false;
+    this.el.toast.style.display = '';
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => { this.el.toast.hidden = true; this.el.toast.style.display = 'none'; }, ms);
+  }
+  hideToast() { clearTimeout(this.toastTimer); this.el.toast.hidden = true; this.el.toast.style.display = 'none'; }
+
+  buildLevelGrid(save, onPick) {
+    const grid = this.el.levelGrid;
+    grid.textContent = '';
+    let stars = 0;
+    for (let lv = 1; lv <= MAX_LEVELS; lv++) {
+      const best = save.best[lv];
+      const unlocked = lv <= save.unlocked;
+      stars += best ? best.stars : 0;
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'bpe-lv' + (unlocked ? '' : ' is-locked') + (best ? ' is-done' : '');
+      cell.disabled = !unlocked;
+      cell.setAttribute('aria-label', `Level ${lv}${unlocked ? '' : ' (locked)'}`);
+      cell.innerHTML = `
+        <span class="bpe-lv-num">${lv}</span>
+        <span class="bpe-lv-cefr">${this.cefrFor(lv)}</span>
+        <span class="bpe-lv-stars">${
+          [1, 2, 3].map((s) => `<img src="${ASSETS.icons.star}" class="${best && best.stars >= s ? '' : 'is-off'}" alt="" draggable="false">`).join('')
+        }</span>
+        ${best ? `<span class="bpe-lv-best">${best.score}</span>` : ''}`;
+      if (unlocked) cell.addEventListener('click', () => onPick(lv));
+      grid.appendChild(cell);
+    }
+    this.el.totalStars.textContent = `${stars} / 45`;
+  }
+
+  showResults({ score, mistakes, time, stars, level }) {
+    this.el.resScore.textContent = score;
+    this.el.resQuestions.textContent = '4 / 4';
+    this.el.resMistakes.textContent = mistakes;
+    this.el.resTime.textContent = fmtTime(time);
+    this.el.completeTitle.textContent = level >= MAX_LEVELS ? 'Course Complete!' : 'Level Complete!';
+    this.el.completeStars.textContent = '';
+    for (let s = 1; s <= 3; s++) {
+      const img = document.createElement('img');
+      img.src = ASSETS.icons.star;
+      img.alt = s <= stars ? 'star' : 'no star';
+      if (s > stars) img.className = 'is-off';
+      this.el.completeStars.appendChild(img);
+    }
+    this.root.querySelector('#btnNextLevel').style.display = level >= MAX_LEVELS ? 'none' : '';
+  }
+
+  setSoundIcons(on) {
+    this.el.soundMenuIcon.src = on ? ASSETS.icons.soundOn : ASSETS.icons.soundOff;
+    this.el.soundPauseIcon.src = on ? ASSETS.icons.soundOn : ASSETS.icons.soundOff;
+  }
+
+  setPopover(open) {
+    this.el.puPopover.hidden = !open;
+    this.el.puPopover.style.display = open ? '' : 'none';
+    this.el.btnPuDock.setAttribute('aria-expanded', String(open));
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}

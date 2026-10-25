@@ -1,0 +1,200 @@
+[
+  {
+    "file": "assets/hd/owl.png",
+    "w": 480,
+    "h": 480,
+    "vis": {
+      "x": 0.075,
+      "y": 0.0313,
+      "w": 0.9167,
+      "h": 0.9354
+    }
+  },
+  {
+    "file": "assets/hd/bubble-red.png",
+    "w": 320,
+    "h": 320,
+    "vis": {
+      "x": 0.0594,
+      "y": 0.0625,
+      "w": 0.8812,
+      "h": 0.8688
+    }
+  },
+  {
+    "file": "assets/hd/bubble-blue.png",
+    "w": 320,
+    "h": 320,
+    "vis": {
+      "x": 0.0906,
+      "y": 0.1062,
+      "w": 0.8156,
+      "h": 0.8031
+    }
+  },
+  {
+    "file": "assets/hd/bubble-yellow.png",
+    "w": 320,
+    "h": 320,
+    "vis": {
+      "x": 0.0781,
+      "y": 0.0844,
+      "w": 0.8406,
+      "h": 0.8313
+    }
+  },
+  {
+    "file": "assets/hd/bubble-green.png",
+    "w": 320,
+    "h": 320,
+    "vis": {
+      "x": 0.05,
+      "y": 0.0531,
+      "w": 0.9,
+      "h": 0.8969
+    }
+  },
+  {
+    "file": "assets/hd/pause.png",
+    "w": 256,
+    "h": 256,
+    "vis": {
+      "x": 0.0586,
+      "y": 0.0625,
+      "w": 0.875,
+      "h": 0.8789
+    }
+  },
+  {
+    "file": "assets/hd/book.png",
+    "w": 192,
+    "h": 119,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/star.png",
+    "w": 192,
+    "h": 182,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/trophy.png",
+    "w": 192,
+    "h": 176,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/heart.png",
+    "w": 192,
+    "h": 150,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/home.png",
+    "w": 191,
+    "h": 192,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/settings.png",
+    "w": 191,
+    "h": 192,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/sound-on.png",
+    "w": 192,
+    "h": 191,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/sound-off.png",
+    "w": 189,
+    "h": 192,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/clock.png",
+    "w": 192,
+    "h": 190,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/hourglass.png",
+    "w": 141,
+    "h": 192,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/question-mark.png",
+    "w": 191,
+    "h": 192,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  },
+  {
+    "file": "assets/hd/target.png",
+    "w": 192,
+    "h": 191,
+    "vis": {
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1
+    }
+  }
+]

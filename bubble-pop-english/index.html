@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="Bubble Pop English — an educational bubble shooter by Boston English Center. Learn English from A1 to C2 across 15 levels.">
+<title>Bubble Pop English — Boston English Center</title>
+<link rel="icon" type="image/svg+xml" href="assets/icons/icon-star-full.svg">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/desktop.css">
+<link rel="stylesheet" href="css/tablet.css">
+<link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+<div id="bpe-root" data-mode="desktop" data-screen="loading">
+
+  <!-- ===================== BACKGROUND ===================== -->
+  <div class="bpe-bg" aria-hidden="true">
+    <div class="bpe-bg-img bpe-bg-desktop"></div>
+    <div class="bpe-bg-img bpe-bg-mobile"></div>
+    <div class="bpe-bg-shade"></div>
+  </div>
+
+  <!-- ===================== GAME SHELL ===================== -->
+  <div class="bpe-shell">
+
+    <!-- Header (desktop / tablet-landscape) -->
+    <header class="bpe-header">
+      <div class="bpe-logo"><img src="assets/icons/logo.svg" alt="Bubble Pop English"></div>
+
+      <div class="bpe-question" id="questionBar">
+        <img class="bpe-panel-art" src="assets/images/optimized/question-bar-body.png" alt="" draggable="false">
+        <div class="bpe-q-book"><img src="assets/icons/icon-book.svg" alt=""></div>
+        <div class="bpe-q-text" id="qText" role="heading" aria-level="1">Loading…</div>
+        <div class="bpe-q-color" id="qColorChip" title=""><span class="bpe-q-color-dot"></span><span class="bpe-q-color-name" id="qColorName"></span></div>
+      </div>
+
+      <div class="bpe-scorezone">
+        <div class="bpe-scorebox">
+          <img class="bpe-panel-art" src="assets/images/optimized/score-container.png" alt="" draggable="false">
+          <div class="bpe-scorebox-content">
+            <div class="bpe-score-label">Score</div>
+            <div class="bpe-score-value" id="scoreVal">0</div>
+          </div>
+        </div>
+        <button class="bpe-settings" id="btnPauseDesktop" type="button" aria-label="Pause and settings">
+          <img class="bpe-panel-art" src="assets/images/optimized/settings-button.png" alt="" draggable="false">
+          <img class="bpe-settings-icon" src="assets/icons/icon-pause.svg" alt="">
+        </button>
+      </div>
+    </header>
+
+    <!-- Left rail: status panel -->
+    <aside class="bpe-rail-left" id="statusRail">
+      <img class="bpe-panel-art" src="assets/images/optimized/status-panel.png" alt="" draggable="false">
+      <div class="bpe-status-content">
+        <div class="bpe-status-level">
+          <div class="bpe-status-kicker">Level</div>
+          <div class="bpe-status-num" id="levelNum">1</div>
+          <div class="bpe-status-cefr" id="levelCefr">A1</div>
+        </div>
+        <div class="bpe-status-block">
+          <div class="bpe-status-label">Question</div>
+          <div class="bpe-status-quest" id="progText">1 / 4</div>
+          <div class="bpe-segs" id="progSegs" role="img" aria-label="Question progress">
+            <span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span>
+          </div>
+        </div>
+        <div class="bpe-status-block">
+          <div class="bpe-status-label">Lives</div>
+          <div class="bpe-hearts" id="hearts" aria-live="polite"></div>
+        </div>
+        <div class="bpe-status-block">
+          <div class="bpe-status-label">Combo</div>
+          <div class="bpe-combo">
+            <div class="bpe-combo-val" id="comboVal">×1</div>
+            <div class="bpe-combo-track"><div class="bpe-combo-fill" id="comboFill"></div></div>
+          </div>
+        </div>
+        <div class="bpe-status-block">
+          <div class="bpe-status-label">Time</div>
+          <div class="bpe-timer" id="timerVal">0:00</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: the playfield -->
+    <main class="bpe-stage" id="stage">
+      <canvas id="bpeCanvas" aria-label="Bubble shooting playfield"></canvas>
+      <div class="bpe-owl" id="owlMascot"><img src="assets/icons/owl.svg" alt="Owl teacher mascot"></div>
+    </main>
+
+    <!-- Right rail: power-ups -->
+    <aside class="bpe-rail-right" id="powerupsRail">
+      <img class="bpe-panel-art" src="assets/images/optimized/powerups-panel.png" alt="" draggable="false">
+      <div class="bpe-powerups-content">
+        <div class="bpe-status-kicker bpe-powerups-title">Power-ups</div>
+        <button class="bpe-pu" type="button" data-pu="rainbow" aria-label="Rainbow bubble: matches any colour">
+          <img src="assets/icons/powerup-rainbow.svg" alt="">
+          <span class="bpe-pu-badge" id="puBadgeRainbow">1</span>
+        </button>
+        <button class="bpe-pu" type="button" data-pu="heart" aria-label="Extra heart">
+          <img src="assets/icons/powerup-heart.svg" alt="">
+          <span class="bpe-pu-badge" id="puBadgeHeart">1</span>
+        </button>
+        <button class="bpe-pu" type="button" data-pu="aim" aria-label="Aiming guide">
+          <img src="assets/icons/powerup-target.svg" alt="">
+          <span class="bpe-pu-badge" id="puBadgeAim">2</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile / portrait composition -->
+    <div class="bpe-m-top" id="mTop">
+      <div class="bpe-m-badge"><span class="bpe-m-badge-lv" id="levelNumM">Lv 1</span><span class="bpe-m-badge-cefr" id="levelCefrM">A1</span></div>
+      <div class="bpe-hearts bpe-hearts-m" id="heartsM" aria-live="polite"></div>
+      <button class="bpe-m-pause" id="btnPauseMobile" type="button" aria-label="Pause"><img src="assets/icons/icon-pause.svg" alt=""></button>
+    </div>
+
+    <div class="bpe-m-question" id="mQuestion">
+      <div class="bpe-m-q-main">
+        <div class="bpe-q-book bpe-m-q-book"><img src="assets/icons/icon-book.svg" alt=""></div>
+        <div class="bpe-q-text bpe-m-q-text" id="qTextM">Loading…</div>
+      </div>
+      <div class="bpe-m-q-sub">
+        <span class="bpe-m-q-stat"><img src="assets/icons/icon-star-full.svg" class="bpe-m-q-ico" alt=""><span id="scoreValM">0</span></span>
+        <span class="bpe-m-q-stat" id="progTextM">1 / 4</span>
+        <span class="bpe-m-q-stat" id="timerValM">0:00</span>
+        <span class="bpe-m-q-stat bpe-m-combo" id="comboValM">×1</span>
+      </div>
+      <div class="bpe-segs bpe-segs-m" id="progSegsM" role="img" aria-label="Question progress">
+        <span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span>
+      </div>
+    </div>
+
+    <div class="bpe-m-dock" id="mDock">
+      <button class="bpe-m-pu" id="btnPuDock" type="button" aria-label="Power-ups" aria-expanded="false">
+        <img src="assets/icons/powerup-rainbow.svg" alt=""><span class="bpe-pu-badge" id="puBadgeDock">4</span>
+      </button>
+      <div class="bpe-m-color" id="mColorChip"><span class="bpe-q-color-dot"></span><span id="mColorName">Blue</span></div>
+      <div class="bpe-next" id="nextWrapM" aria-label="Next bubble">
+        <div class="bpe-next-bubble" id="nextBubbleM"></div>
+        <img class="bpe-panel-art" src="assets/images/optimized/next-bubble-frame.png" alt="" draggable="false">
+        <span class="bpe-next-label">Next</span>
+      </div>
+    </div>
+
+    <!-- Desktop next-bubble preview (positioned over the stage by layout.js) -->
+    <div class="bpe-next" id="nextWrap" aria-label="Next bubble">
+      <div class="bpe-next-bubble" id="nextBubble"></div>
+      <img class="bpe-panel-art" src="assets/images/optimized/next-bubble-frame.png" alt="" draggable="false">
+      <span class="bpe-next-label">Next</span>
+    </div>
+
+  </div>
+
+  <!-- ===================== POWER-UP POPOVER (mobile) ===================== -->
+  <div class="bpe-popover" id="puPopover" hidden>
+    <div class="bpe-popover-card" role="dialog" aria-label="Power-ups">
+      <div class="bpe-popover-title">Power-ups</div>
+      <div class="bpe-popover-row">
+        <button class="bpe-pu bpe-pu-pop" type="button" data-pu="rainbow">
+          <img src="assets/icons/powerup-rainbow.svg" alt=""><span class="bpe-pu-badge" id="puBadgeRainbowM">1</span><span class="bpe-pu-name">Rainbow</span>
+        </button>
+        <button class="bpe-pu bpe-pu-pop" type="button" data-pu="heart">
+          <img src="assets/icons/powerup-heart.svg" alt=""><span class="bpe-pu-badge" id="puBadgeHeartM">1</span><span class="bpe-pu-name">Heart</span>
+        </button>
+        <button class="bpe-pu bpe-pu-pop" type="button" data-pu="aim">
+          <img src="assets/icons/powerup-target.svg" alt=""><span class="bpe-pu-badge" id="puBadgeAimM">2</span><span class="bpe-pu-name">Aim</span>
+        </button>
+      </div>
+      <button class="bpe-btn bpe-btn-small" id="btnPuClose" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== TOAST ===================== -->
+  <div class="bpe-toast" id="toast" role="status" aria-live="polite" hidden>
+    <div class="bpe-toast-title" id="toastTitle"></div>
+    <div class="bpe-toast-body" id="toastBody"></div>
+  </div>
+
+  <!-- ===================== SCREENS ===================== -->
+  <div class="bpe-screens" id="screens">
+
+    <section class="bpe-screen" id="screen-loading" aria-label="Loading">
+      <img class="bpe-menu-logo" src="assets/icons/logo.svg" alt="Bubble Pop English">
+      <div class="bpe-loading-card">
+        <div class="bpe-loading-owl"><img src="assets/icons/owl.svg" alt=""></div>
+        <div class="bpe-loading-text" id="loadText">Preparing the classroom…</div>
+        <div class="bpe-loading-track"><div class="bpe-loading-fill" id="loadFill"></div></div>
+      </div>
+    </section>
+
+    <section class="bpe-screen" id="screen-menu" hidden aria-label="Main menu">
+      <div class="bpe-menu-bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <img class="bpe-menu-logo" src="assets/icons/logo.svg" alt="Bubble Pop English">
+      <div class="bpe-menu-card">
+        <p class="bpe-menu-tag">Boston English Center presents</p>
+        <div class="bpe-menu-buttons">
+          <button class="bpe-btn bpe-btn-primary" id="btnPlay" type="button"><img src="assets/icons/icon-play.svg" alt=""><span id="btnPlayLabel">Play</span></button>
+          <button class="bpe-btn" id="btnLevels" type="button"><img src="assets/icons/icon-star-full.svg" alt=""><span>Levels</span></button>
+          <button class="bpe-btn" id="btnHowTo" type="button"><img src="assets/icons/icon-book.svg" alt=""><span>How to Play</span></button>
+          <button class="bpe-btn" id="btnSoundMenu" type="button"><img id="soundMenuIcon" src="assets/icons/icon-sound-on.svg" alt=""><span>Sound</span></button>
+        </div>
+      </div>
+      <div class="bpe-menu-owl"><img src="assets/icons/owl.svg" alt="Owl teacher waving"></div>
+    </section>
+
+    <section class="bpe-screen" id="screen-levels" hidden aria-label="Level select">
+      <div class="bpe-dialog">
+        <div class="bpe-dialog-head">
+          <h2>Choose a Level</h2>
+          <div class="bpe-dialog-total" id="totalStars"></div>
+        </div>
+        <div class="bpe-level-grid" id="levelGrid"></div>
+        <div class="bpe-dialog-actions">
+          <button class="bpe-btn" id="btnLevelsBack" type="button"><img src="assets/icons/icon-home.svg" alt=""><span>Back</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="bpe-screen" id="screen-howto" hidden aria-label="How to play">
+      <div class="bpe-dialog bpe-dialog-wide">
+        <div class="bpe-dialog-head"><h2>How to Play</h2></div>
+        <ol class="bpe-howto">
+          <li><img src="assets/icons/icon-book.svg" alt=""><div><b>Read the question</b> on the wooden banner at the top.</div></li>
+          <li><img src="assets/icons/icon-star-full.svg" alt=""><div><b>Find the answer</b> inside the bubbles — three other choices are hiding up there too.</div></li>
+          <li><img src="assets/icons/powerup-target.svg" alt=""><div><b>Aim and shoot</b> with your mouse or finger. Bubbles bounce off the side walls!</div></li>
+          <li><img src="assets/icons/powerup-heart.svg" alt=""><div><b>Match the colour</b>: your shot must join <b>3 same-colour bubbles</b> on the correct answer. Wrong shots cost a heart.</div></li>
+          <li><img src="assets/icons/icon-star-full.svg" alt=""><div><b>Score and combos.</b> Four correct answers finish the level. No mistakes = 3 stars!</div></li>
+        </ol>
+        <div class="bpe-dialog-actions">
+          <button class="bpe-btn bpe-btn-primary" id="btnHowToBack" type="button"><span>Got it!</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="bpe-screen" id="screen-pause" hidden aria-label="Paused">
+      <div class="bpe-dialog">
+        <div class="bpe-dialog-head"><h2>Paused</h2><div class="bpe-dialog-sub" id="pauseInfo"></div></div>
+        <div class="bpe-menu-buttons">
+          <button class="bpe-btn bpe-btn-primary" id="btnResume" type="button"><img src="assets/icons/icon-play.svg" alt=""><span>Resume</span></button>
+          <button class="bpe-btn" id="btnRestart" type="button"><img src="assets/icons/icon-retry.svg" alt=""><span>Restart Level</span></button>
+          <button class="bpe-btn" id="btnSoundPause" type="button"><img id="soundPauseIcon" src="assets/icons/icon-sound-on.svg" alt=""><span>Sound</span></button>
+          <button class="bpe-btn" id="btnHome" type="button"><img src="assets/icons/icon-home.svg" alt=""><span>Main Menu</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="bpe-screen" id="screen-complete" hidden aria-label="Level complete">
+      <div class="bpe-dialog bpe-dialog-celebrate">
+        <div class="bpe-dialog-head"><h2 id="completeTitle">Level Complete!</h2><div class="bpe-dialog-sub" id="completeSub"></div></div>
+        <div class="bpe-stars" id="completeStars" aria-label="Stars earned"></div>
+        <div class="bpe-results">
+          <div class="bpe-result"><span>Score</span><b id="resScore">0</b></div>
+          <div class="bpe-result"><span>Questions</span><b id="resQuestions">4 / 4</b></div>
+          <div class="bpe-result"><span>Mistakes</span><b id="resMistakes">0</b></div>
+          <div class="bpe-result"><span>Time</span><b id="resTime">0:00</b></div>
+        </div>
+        <div class="bpe-dialog-actions">
+          <button class="bpe-btn bpe-btn-primary" id="btnNextLevel" type="button"><img src="assets/icons/icon-play.svg" alt=""><span>Next Level</span></button>
+          <button class="bpe-btn" id="btnReplay" type="button"><img src="assets/icons/icon-retry.svg" alt=""><span>Replay</span></button>
+          <button class="bpe-btn" id="btnLevelSel" type="button"><img src="assets/icons/icon-star-full.svg" alt=""><span>Levels</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="bpe-screen" id="screen-gameover" hidden aria-label="Game over">
+      <div class="bpe-dialog bpe-dialog-sad">
+        <div class="bpe-dialog-head">
+          <h2>Out of Hearts!</h2>
+          <div class="bpe-dialog-sub" id="gameoverSub"></div>
+        </div>
+        <div class="bpe-go-tip" id="goTip"></div>
+        <div class="bpe-dialog-actions">
+          <button class="bpe-btn bpe-btn-primary" id="btnRetry" type="button"><img src="assets/icons/icon-retry.svg" alt=""><span>Try Again</span></button>
+          <button class="bpe-btn" id="btnGoLevels" type="button"><img src="assets/icons/icon-star-full.svg" alt=""><span>Levels</span></button>
+          <button class="bpe-btn" id="btnGoHome" type="button"><img src="assets/icons/icon-home.svg" alt=""><span>Main Menu</span></button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <noscript><div class="bpe-nojs">Bubble Pop English needs JavaScript to run. Please enable JavaScript and reload.</div></noscript>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

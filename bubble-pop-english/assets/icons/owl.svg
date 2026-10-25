@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 230">
+  <defs>
+    <radialGradient id="body" cx="0.4" cy="0.3" r="1">
+      <stop offset="0" stop-color="#a3702f"/><stop offset="0.6" stop-color="#8a5a2f"/><stop offset="1" stop-color="#6b431f"/>
+    </radialGradient>
+    <radialGradient id="belly" cx="0.5" cy="0.35" r="0.9">
+      <stop offset="0" stop-color="#fff3d6"/><stop offset="1" stop-color="#e8cfa0"/>
+    </radialGradient>
+    <radialGradient id="eye" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dcecf7"/>
+    </radialGradient>
+  </defs>
+  <!-- tail -->
+  <path d="M100 196l-14 26h50l-10-26z" fill="#6b431f" stroke="#4c2f14" stroke-width="4" stroke-linejoin="round"/>
+  <!-- feet -->
+  <path d="M74 210q-4 10 6 12M126 210q4 10-6 12" fill="none" stroke="#f0a722" stroke-width="7" stroke-linecap="round"/>
+  <!-- body -->
+  <ellipse cx="100" cy="120" rx="66" ry="80" fill="url(#body)" stroke="#4c2f14" stroke-width="5"/>
+  <!-- wings -->
+  <path d="M36 100q-16 42 10 72 8-4 10-14-18-26-8-52z" fill="#6b431f" stroke="#4c2f14" stroke-width="4"/>
+  <path d="M164 100q16 42-10 72-8-4-10-14 18-26 8-52z" fill="#6b431f" stroke="#4c2f14" stroke-width="4"/>
+  <!-- belly -->
+  <ellipse cx="100" cy="140" rx="42" ry="50" fill="url(#belly)"/>
+  <!-- head tufts -->
+  <path d="M46 46l-8-30 30 16zM154 46l8-30-30 16z" fill="#8a5a2f" stroke="#4c2f14" stroke-width="4" stroke-linejoin="round"/>
+  <!-- head -->
+  <circle cx="100" cy="78" r="58" fill="url(#body)" stroke="#4c2f14" stroke-width="5"/>
+  <!-- eyes -->
+  <circle cx="76" cy="70" r="24" fill="url(#eye)" stroke="#4c2f14" stroke-width="4"/>
+  <circle cx="124" cy="70" r="24" fill="url(#eye)" stroke="#4c2f14" stroke-width="4"/>
+  <circle cx="79" cy="72" r="10" fill="#10365f"/>
+  <circle cx="121" cy="72" r="10" fill="#10365f"/>
+  <circle cx="82.5" cy="68.5" r="3.4" fill="#fff"/>
+  <circle cx="124.5" cy="68.5" r="3.4" fill="#fff"/>
+  <!-- graduation glasses bridge -->
+  <path d="M100 70q-6 4 0 8" fill="none" stroke="#4c2f14" stroke-width="4"/>
+  <!-- beak -->
+  <path d="M100 82l13 16-13 10-13-10z" fill="#f0a722" stroke="#a86a10" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- graduation cap -->
+  <path d="M52 40l48-22 48 22-48 18z" fill="#1d3f70" stroke="#0c2547" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M84 50v14c0 8 32 8 32 0V50" fill="none" stroke="#0c2547" stroke-width="4"/>
+  <path d="M146 42v22" stroke="#ffce3c" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="146" cy="68" r="6" fill="#ffce3c" stroke="#a86a10" stroke-width="3"/>
+  <!-- book in wings -->
+  <path d="M64 148c12-6 24-6 36 0 12-6 24-6 36 0v26c-12-6-24-6-36 0-12-6-24-6-36 0z" fill="#3f8efc" stroke="#0c2547" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M100 148v26" stroke="#0c2547" stroke-width="3.5"/>
+</svg>

@@ -601,11 +601,13 @@ export class Game {
   // ---- resize ---------------------------------------------------------------
   onResize(info) {
     if (!this.world) return;
-    // Recompute the viewport transform first; the whole existing world
-    // (targets, projectile, cannon) scales together so nothing moves
-    // relative to anything else. Native rebuild happens at the next
-    // PREPARING_QUESTION boundary.
-    this.world.setView(info.cssW, info.cssH, info.dpr);
+    // Re-fit the aiming corridor and viewport transform; the whole existing
+    // world (targets, projectile, cannon) scales together so nothing moves
+    // relative to anything else. fitStage only touches the corridor below the
+    // board and the view — the cluster arrangement itself only changes at
+    // question boundaries (buildPuzzle), never mid-question, so rotating the
+    // device neither resets the level nor corrupts an in-flight shot.
+    this.world.fitStage(info.cssW, info.cssH, info.dpr);
     // Answer labels depend on the view scale (readable-size floors in CSS px),
     // so re-fit them for the new geometry. Cluster arrangement itself only
     // changes at question boundaries (buildPuzzle), never mid-question.

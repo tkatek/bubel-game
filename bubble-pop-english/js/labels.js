@@ -261,7 +261,8 @@ function placeTag(meas, text, world, cl, anchor, reserved, minSize, snap) {
       const hitsLabels = reserved.filter((r2) => rectsOverlap(rect, r2)).length;
       const hitsCells = others.filter((p) => rectTouchesCircle(rect, p, D * 0.58)).length;
       const corridor = ry + h > occupiedBottom + D * 0.2 ? 1 : 0;
-      candidates.push({ rect, cost: hitsLabels * 12 + hitsCells * 6 + corridor * 3 + gap / D + (dir[1] > 0 ? 0.4 : 0), blocked: out || hitsLabels > 0 || hitsCells > 0 });
+      const diagonal = dir[0] !== 0 && dir[1] !== 0 ? 0.25 : 0;
+      candidates.push({ rect, cost: hitsLabels * 12 + hitsCells * 6 + corridor * 3 + gap / D + diagonal + (dir[1] > 0 ? 0.4 : 0), blocked: out || hitsLabels > 0 || hitsCells > 0 });
     }
   }
   candidates.sort((a, b) => (a.blocked - b.blocked) || (a.cost - b.cost));
@@ -276,6 +277,8 @@ function placeTag(meas, text, world, cl, anchor, reserved, minSize, snap) {
 }
 
 // Small triangle keeping the tag visually attached to its cluster bubble.
+// The tail reaches all the way to the anchor bubble's rim so a tag parked
+// diagonally off its cluster's corner still reads as belonging to it.
 function tailFor(rect, anchor, D) {
   const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
   const dx = anchor.x - cx, dy = anchor.y - cy;
@@ -288,16 +291,21 @@ function tailFor(rect, anchor, D) {
   if (uy > 1e-9) tEdge = Math.min(tEdge, (rect.y + rect.h - cy) / uy);
   if (uy < -1e-9) tEdge = Math.min(tEdge, (rect.y - cy) / uy);
   const base = { x: cx + ux * tEdge, y: cy + uy * tEdge };
-  // reach toward the bubble rim, but always keep a visible nub
-  const tailLen = Math.max(D * 0.16, Math.min(len - tEdge, D * 0.5));
+  const toAnchor = len - tEdge;             // rect edge → bubble centre
+  const rim = D * 0.44;                     // stop at the bubble's visible rim
+  const tailLen = clampTail(toAnchor - rim, D);
   const apex = { x: base.x + ux * tailLen, y: base.y + uy * tailLen };
-  const px = -uy, py = ux;                              // perpendicular
+  const px = -uy, py = ux;                  // perpendicular
   const hw = D * 0.15;
   return {
     a: { x: base.x + px * hw, y: base.y + py * hw },
     b: { x: base.x - px * hw, y: base.y - py * hw },
     apex,
   };
+}
+
+function clampTail(v, D) {
+  return Math.max(D * 0.18, Math.min(v, D * 1.15));
 }
 
 // ---- drawing ---------------------------------------------------------------

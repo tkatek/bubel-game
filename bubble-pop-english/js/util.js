@@ -13,7 +13,7 @@ export function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
 export function fmtTime(totalSeconds) {
   const s = Math.max(0, Math.floor(totalSeconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
 export function qs(sel, root = document) { return root.querySelector(sel); }

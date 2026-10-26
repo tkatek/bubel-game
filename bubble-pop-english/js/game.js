@@ -130,6 +130,9 @@ export class Game {
     st.loadedColor = BUBBLE_COLORS[Math.floor(rng() * 4)];
     st.rainbowArmed = false;
     st.aimBoost = false;
+    // Bubble labels show the answer word; questions with sentence-length
+    // answers fall back to letter badges + a banner list (readability).
+    st.useLetters = st.optionsOrder.some((o) => o.text.trim().length > 12);
 
     this.buildBoard();
     this.ui.renderQuestion(st);

@@ -131,34 +131,61 @@ export class Renderer {
 
   drawBoard(game, world, px) {
     const D = world.D;
-    // cluster badges: centroid + letter
-    const byOption = new Map();
+    const ctx = this.ctx;
+    const st = game.state;
+    // label lookup: option id -> bubble word / letter
+    const labelOf = new Map();
+    if (st.question) {
+      for (const o of st.question.options) {
+        labelOf.set(o.id, st.useLetters ? o.id.toUpperCase() : o.text.trim());
+      }
+    }
     for (const b of world.board.entries()) {
       const p = world.board.cellCenter(b.r, b.c, D);
       const spr = this.bubbleSprite(b.color, px);
-      this.ctx.drawImage(spr, p.x - D / 2, p.y - D / 2, D, D);
-      if (!byOption.has(b.option)) byOption.set(b.option, { xs: 0, ys: 0, n: 0 });
-      const acc = byOption.get(b.option);
-      acc.xs += p.x; acc.ys += p.y; acc.n++;
+      ctx.drawImage(spr, p.x - D / 2, p.y - D / 2, D, D);
+      const label = b.option != null ? labelOf.get(b.option) : null;
+      if (label) this.drawBubbleLabel(ctx, label, p.x, p.y, D);
     }
-    // option letter badges
-    const ctx = this.ctx;
-    for (const [opt, a] of byOption) {
-      const x = a.xs / a.n, y = a.ys / a.n;
-      const rr = D * 0.34;
-      ctx.save();
-      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,243,214,0.95)';
-      ctx.shadowColor = 'rgba(10,30,55,0.55)'; ctx.shadowBlur = rr * 0.5; ctx.shadowOffsetY = rr * 0.12;
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.lineWidth = rr * 0.16; ctx.strokeStyle = '#f0a722'; ctx.stroke();
-      ctx.fillStyle = '#0c2547';
-      ctx.font = `700 ${rr * 1.15}px ${'Trebuchet MS'}, Verdana, sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(opt.toUpperCase(), x, y + rr * 0.06);
-      ctx.restore();
+  }
+
+  // Dark navy word centred on the bubble, shrunk/wrapped to fit.
+  drawBubbleLabel(ctx, label, x, y, D) {
+    ctx.save();
+    ctx.fillStyle = '#0c2547';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const maxW = D * 0.84;
+    let size = D * 0.26;
+    ctx.font = `700 ${size}px Trebuchet MS, Verdana, sans-serif`;
+    if (ctx.measureText(label).width > maxW) {
+      // two lines at the split nearest the middle
+      size = D * 0.21;
+      ctx.font = `700 ${size}px Trebuchet MS, Verdana, sans-serif`;
+      let mid = Math.floor(label.length / 2);
+      let best = mid, bestDist = Infinity;
+      for (let i = 2; i < label.length - 1; i++) {
+        if (label[i] === ' ' || label[i] === '-') {
+          const d = Math.abs(i - mid);
+          if (d < bestDist) { bestDist = d; best = i + 1; }
+        }
+      }
+      const a = label.slice(0, best).trim();
+      const b = label.slice(best).trim();
+      if (ctx.measureText(a).width <= maxW && ctx.measureText(b).width <= maxW) {
+        ctx.fillText(a, x, y - size * 0.58);
+        ctx.fillText(b, x, y + size * 0.58);
+        ctx.restore();
+        return;
+      }
+      // still too wide: keep shrinking on one line
+      while (size > D * 0.11 && ctx.measureText(label).width > maxW) {
+        size -= 1;
+        ctx.font = `700 ${size}px Trebuchet MS, Verdana, sans-serif`;
+      }
     }
+    ctx.fillText(label, x, y + size * 0.06);
+    ctx.restore();
   }
 
   drawGuide(game, world) {

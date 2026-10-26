@@ -49,6 +49,7 @@ export class GameState {
     this.activeTime = 0;            // elapsed seconds while the learner can act
     this.question = null;           // { id, prompt, options, correct, explain }
     this.optionsOrder = [];         // shuffled option objects
+    this.useLetters = false;        // sentence-length answers → letter badges
     this.loadedColor = 'blue';
     this.rainbowArmed = false;
     this.aimBoost = false;

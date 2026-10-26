@@ -19,6 +19,7 @@ export class UI {
       mColorChip: q('mColorChip'), mColorName: q('mColorName'),
       levelNum: q('levelNum'), levelCefr: q('levelCefr'), levelNumM: q('levelNumM'), levelCefrM: q('levelCefrM'),
       progText: q('progText'), progSegs: q('progSegs'), progTextM: q('progTextM'), progSegsM: q('progSegsM'),
+      qBar: q('qBar'), qBarM: q('qBarM'),
       hearts: q('hearts'), heartsM: q('heartsM'),
       comboVal: q('comboVal'), comboFill: q('comboFill'), comboValM: q('comboValM'),
       timerVal: q('timerVal'), timerValM: q('timerValM'),
@@ -72,11 +73,15 @@ export class UI {
     const q = state.question;
     const opts = state.optionsOrder;
     const letter = { a: 'A', b: 'B', c: 'C', d: 'D' };
+    // Answers live on the bubbles; the banner list appears only when the
+    // answer text is too long to read on a bubble (letter-badge fallback).
+    this.root.classList.toggle('show-opts', !!state.useLetters);
     for (const [textEl, optsEl] of [[this.el.qText, this.el.qOpts], [this.el.qTextM, this.el.qOptsM]]) {
       if (!textEl) continue;
       textEl.textContent = q.prompt;
       if (optsEl) {
         optsEl.textContent = '';
+        if (!state.useLetters) continue;
         for (const o of opts) {
           const li = document.createElement('span');
           li.className = 'bpe-q-opt';
@@ -100,6 +105,11 @@ export class UI {
     const qn = clamp(state.qIndex + 1, 1, 4);
     this.el.progText.textContent = `${qn} / 4`;
     this.el.progTextM.textContent = `${qn} / 4`;
+    // progress bar (reference style) — filled portion = questions completed
+    const fillPct = Math.round((state.qIndex / 4) * 100);
+    for (const bar of [this.el.qBar, this.el.qBarM]) {
+      if (bar) bar.style.width = `${fillPct}%`;
+    }
     const segs = [this.el.progSegs, this.el.progSegsM];
     for (const wrap of segs) {
       if (!wrap) continue;
@@ -129,8 +139,8 @@ export class UI {
     this.el.comboValM.textContent = `×${state.combo + 1}`;
     this.el.comboFill.style.width = `${clamp(state.combo * 25, 0, 100)}%`;
 
-    this.el.scoreVal.textContent = state.score;
-    this.el.scoreValM.textContent = state.score;
+    this.el.scoreVal.textContent = state.score.toLocaleString('en-US');
+    this.el.scoreValM.textContent = state.score.toLocaleString('en-US');
 
     this.el.nextBubble.style.backgroundImage = `url(${this.bubbleUrl[state.loadedColor]})`;
     this.el.nextBubbleM.style.backgroundImage = `url(${this.bubbleUrl[state.loadedColor]})`;

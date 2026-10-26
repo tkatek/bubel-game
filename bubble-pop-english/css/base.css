@@ -154,7 +154,7 @@ html:has(#bpe-root), body:has(#bpe-root) { margin: 0; padding: 0; overflow: hidd
 }
 .bpe-q-color-dot {
   width: 20px; height: 20px; border-radius: 50%;
-  background: #4d96ff center/cover !important;
+  background: #4d96ff center/cover; /* fallback; ui.js paints the live colour inline */
   border: 2px solid rgba(255, 255, 255, 0.65);
   box-shadow: inset -2px -3px 4px rgba(0, 0, 0, 0.25);
 }

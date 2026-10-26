@@ -112,6 +112,7 @@
 /* main row: book icon · [type chip / question / context] stack */
 .bpe-m-q-main { position: relative; z-index: 2; display: flex; align-items: flex-start; gap: 9px; }
 .bpe-m-q-book { width: 30px; flex: 0 0 auto; margin-top: 2px; }
+.bpe-m-q-book img { width: 100%; height: auto; }
 .bpe-m-q-body { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .bpe-m-q-body .bpe-q-type {
   font-size: 9.5px; line-height: 1.6;

@@ -569,10 +569,11 @@ export class Game {
   gameOver() {
     const st = this.state;
     st.go(PHASE.GAME_OVER);
-    this.ui.el.gameoverSub.textContent = `Level ${st.level} — Question ${Math.min(st.qIndex + 1, 4)} of 4`;
-    this.ui.el.goTip.textContent = 'Tip: each answer sits on a bubble group — pop the group whose label answers the question!';
+    this.ui.gameoverSub.textContent = `Level ${st.level} — Question ${Math.min(st.qIndex + 1, 4)} of 4`;
+    this.ui.goTip.textContent = 'Tip: pop the group whose label answers the question. Not-a-answer walls can be cleared for bonus points, and bubbles bounce off the side walls — bank shots score extra!';
     this.ui.screen('gameover');
     this.ui.showGameChrome(false);
+    this.ui.owlMood('oops', 1400);
     this.audio.play('gameover');
   }
 

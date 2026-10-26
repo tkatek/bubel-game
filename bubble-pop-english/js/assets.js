@@ -35,6 +35,7 @@ export const ASSETS = {
   owl: { url: 'assets/hd/owl.png', vis: { x: 0.0916, y: 0.0657, w: 0.9145, h: 0.9359 } },
   icons: {
     heart: 'assets/hd/heart.png',
+    heartEmpty: 'assets/icons/heart-empty.svg',
     book: 'assets/hd/book.png',
     star: 'assets/hd/star.png',
     clock: 'assets/hd/clock.png',

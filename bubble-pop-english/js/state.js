@@ -50,7 +50,9 @@ export class GameState {
     this.question = null;           // { id, prompt, options, correct, explain }
     this.optionsOrder = [];         // shuffled option objects
     this.useLetters = false;        // sentence-length answers → letter badges
-    this.loadedColor = 'blue';
+    this.loadedColor = 'blue';      // colour in the cannon (queue head)
+    this.nextColor = 'blue';        // next bubble up (queue[1], HUD preview)
+    this.queue = [];                // deterministic ammunition queue for this question
     this.rainbowArmed = false;
     this.aimBoost = false;
     this.powerups = { rainbow: 1, heart: 1, aim: 2 };
@@ -82,6 +84,8 @@ export class GameState {
     this.rainbowArmed = false;
     this.aimBoost = false;
     this.powerups = { rainbow: 1, heart: 1, aim: 2 };
+    this.queue = [];
+    this.nextColor = this.loadedColor;
   }
 
   newShotId() { return `shot-${this.runToken}-${++this.shotSeq}`; }

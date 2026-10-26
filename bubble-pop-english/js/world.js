@@ -12,6 +12,9 @@ export const CELL = 60;            // world units per bubble cell (constant; sca
 export const MIN_ELEVATION = 15;   // degrees above horizontal a shot needs
 export const MAX_DEFLECTION = 76;  // max degrees off vertical (documented firing range)
 
+export const MIN_CORRIDOR_D = 2.1;  // aiming corridor, in cell diameters
+export const MAX_CORRIDOR_D = 6.5;  // cap so very tall stages don't get absurd flights
+
 export function makeWorld(cols, clusters) {
   const D = CELL;
   const board = new HexBoard(cols, clusters);
@@ -22,10 +25,11 @@ export function makeWorld(cols, clusters) {
   const cannonW = D / (2 * ASSETS.cannon.socket.r);
   const cannonH = cannonW * ASSETS.cannon.aspect;
   const boardBottom = 5 * ROW_H * D + D;              // bottom of row 5
-  const muzzleY = boardBottom + 2.1 * D;              // unobstructed aiming corridor
+  const muzzleY = boardBottom + MIN_CORRIDOR_D * D;   // unobstructed aiming corridor
   const H = muzzleY + (1 - ASSETS.cannon.socket.y) * cannonH;
 
-  const muzzle = { x: W / 2 + (ASSETS.cannon.socket.x - 0.5) * cannonW, y: muzzleY };
+  const muzzleX = W / 2 + (ASSETS.cannon.socket.x - 0.5) * cannonW;
+  const muzzle = { x: muzzleX, y: muzzleY };
   const cannonRect = { x: W / 2 - cannonW / 2, y: H - cannonH, w: cannonW, h: cannonH };
 
   return {
@@ -35,15 +39,31 @@ export function makeWorld(cols, clusters) {
     speed: 13 * D,                                    // world units / second
     projectileR: D / 2,
 
-    // Fit this world into a CSS-sized canvas; uniform scale, letterboxed.
+    // Fit this world into a CSS-sized canvas; uniform scale. Vertical slack is
+    // anchored to the BOTTOM (cannon sits just above the launcher dock) so a
+    // width-limited stage never leaves a dead band above the board.
     setView(cssW, cssH, dpr) {
       const scale = Math.min(cssW / this.W, cssH / this.H);
       this.view = {
         scale, dpr,
         ox: (cssW - this.W * scale) / 2,
-        oy: (cssH - this.H * scale) / 2,
+        oy: Math.max(0, cssH - this.H * scale),
         cssW, cssH,
       };
+    },
+
+    // Adapt the aiming corridor so the world's aspect tracks the stage, then
+    // set the view. Only the corridor below the board and the canvas
+    // transform change — the board grid, clusters and any in-flight shot keep
+    // their world coordinates, so this is safe mid-question and mid-shot.
+    fitStage(cssW, cssH, dpr) {
+      const below = (1 - ASSETS.cannon.socket.y) * this.cannonH; // cannon under the muzzle
+      const desiredH = this.W * cssH / Math.max(1, cssW);
+      const corridor = clamp(desiredH - boardBottom - below, MIN_CORRIDOR_D * D, MAX_CORRIDOR_D * D);
+      this.H = boardBottom + corridor + below;
+      this.muzzle = { x: muzzleX, y: boardBottom + corridor };
+      this.cannonRect = { x: this.W / 2 - this.cannonW / 2, y: this.H - this.cannonH, w: this.cannonW, h: this.cannonH };
+      this.setView(cssW, cssH, dpr);
     },
 
     screenToWorld(localX, localY) {

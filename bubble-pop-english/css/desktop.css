@@ -1,6 +1,6 @@
 /* ============================================================
-   Desktop composition (also drives tablet landscape and the
-   compact landscape-phone variant tuned by tablet.css).
+   Desktop composition (also drives tablet landscape; the
+   compact landscape-phone variant is tuned by tablet.css).
    header / left status rail / stage / right power-up rail
    ============================================================ */
 #bpe-root[data-mode="desktop"] .bpe-shell,
@@ -20,38 +20,94 @@
 #bpe-root[data-mode="desktop"] .bpe-rail-right,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-rail-right { grid-area: railright; }
 
-/* header: logo | question banner | score+pause */
+/* On very large screens keep the cockpit near the artwork: cap the
+   shell and center it over the full-bleed background. */
+#bpe-root[data-mode="desktop"] .bpe-shell {
+  max-width: 1760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ---------- header: logo | question banner | score+pause ---------- */
 #bpe-root[data-mode="desktop"] .bpe-header,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-  min-height: 74px;
+  min-height: 84px;
+}
+#bpe-root[data-mode="desktop"] .bpe-logo,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo {
+  align-self: center;
+  filter: drop-shadow(0 3px 6px rgba(4, 16, 34, 0.55));
 }
 #bpe-root[data-mode="desktop"] .bpe-logo img,
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 52px; width: auto; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 58px; width: auto; display: block; }
 
-/* compact-but-useful question card (spec: ~80–110px tall, 18–26px text) */
+/* question banner: wood frame + navy field + gold fillet (CSS frame,
+   matches the painted question-bar artwork without stretching it) */
 #bpe-root[data-mode="desktop"] .bpe-question,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto auto;
+  position: relative;
+  display: flex;
   align-items: center;
-  column-gap: 12px;
-  row-gap: 4px;
-  padding: 12px 26px 13px 18px;
-  min-height: 0;
+  gap: 12px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 6px;
+  padding-left: 8px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f3b95e 0%, #d78f3c 42%, #a5641f 100%);
+  border: 1px solid rgba(84, 46, 8, 0.65);
+  box-shadow: 0 6px 16px rgba(6, 24, 48, 0.45), inset 0 2px 0 rgba(255, 240, 200, 0.55);
 }
+#bpe-root[data-mode="desktop"] .bpe-question::after,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question::after {
+  content: '';
+  position: absolute; inset: 3.5px;
+  z-index: 2;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 206, 60, 0.4);
+  pointer-events: none;
+}
+#bpe-root[data-mode="desktop"] .bpe-q-main,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-main {
+  flex: 1 1 auto;
+  align-self: stretch;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #2a6cb0 0%, #17497f 38%, #0d2f56 100%);
+  box-shadow: inset 0 2px 6px rgba(3, 12, 26, 0.55), inset 0 -1px 0 rgba(127, 216, 255, 0.18);
+  padding: 8px 14px;
+}
+/* spec: 19–24px question text, natural wrap, never under the chip */
 #bpe-root[data-mode="desktop"] .bpe-q-text,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-text { font-size: 20px; }
-#bpe-root[data-mode="desktop"] .bpe-q-book,
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book { grid-row: 1 / span 2; width: 42px; }
 #bpe-root[data-mode="desktop"] .bpe-q-opts,
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-opts { grid-column: 2; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-opts { font-size: 13px; }
+
+/* book icon sits in a small gold-rimmed socket, like the artwork */
+#bpe-root[data-mode="desktop"] .bpe-q-book,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book {
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #3f8fd6, #1c5a96);
+  border: 2.5px solid var(--bpe-gold);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.35), 0 2px 4px rgba(20, 12, 0, 0.35);
+}
+#bpe-root[data-mode="desktop"] .bpe-q-book img,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book img { width: 38px; height: auto; }
+
+/* current-bubble chip on the banner's right, in its own lighter panel */
 #bpe-root[data-mode="desktop"] .bpe-q-color,
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color { grid-row: 1 / span 2; grid-column: 3; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color {
+  flex: 0 0 auto;
+  margin-right: 3px;
+  border-radius: 13px;
+  padding: 6px 13px 6px 7px;
+}
 
 /* mobile composition elements are absent on desktop */
 #bpe-root[data-mode="desktop"] .bpe-m-top,
@@ -61,14 +117,15 @@
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-m-question,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-m-dock { display: none; }
 
+/* ---------- rails: compact, content-sized ---------- */
+#bpe-root[data-mode="desktop"] .bpe-rail-left { width: 100%; }
+#bpe-root[data-mode="desktop"] .bpe-rail-right { width: 100%; }
+
 /* the stage gets all remaining space; the world letterboxes inside */
 #bpe-root[data-mode="desktop"] .bpe-stage,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-stage { min-height: 0; }
 
-/* wider power-up rail stays narrow */
-#bpe-root[data-mode="desktop"] .bpe-rail-right { width: 100%; }
-
-/* stage overlays: owl bottom-left, next card right of the cannon (reference) */
+/* stage overlays: owl bottom-left, next card right of the cannon */
 .bpe-owl { left: 1.5%; bottom: 2%; width: clamp(70px, 11%, 128px); }
 #bpe-root[data-mode="desktop"] #nextWrap,
 #bpe-root[data-mode="tablet"][data-orient="landscape"] #nextWrap {

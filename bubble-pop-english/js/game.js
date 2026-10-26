@@ -4,8 +4,12 @@
 
 import { LEVELS, validateLevels, shuffledOptions } from './questions.js';
 import { BUBBLE_COLORS } from './assets.js';
-import { buildClusters, validateClusters } from './board.js';
+import {
+  buildClusters, validateClusters,
+  buildPuzzleBoard, validateBoard, buildAmmunitionQueue, densityTargets,
+} from './board.js';
 import { makeWorld, stepProjectile, resolveLanding, sweepShot, auditReachability } from './world.js';
+import { checkBoardSolvable } from './solver.js';
 import { GameState, PHASE, LIFE_CAP } from './state.js';
 import { mulberry32, nextId, clamp } from './util.js';
 import { loadSave, persist, MAX_LEVELS } from './storage.js';
@@ -15,6 +19,9 @@ const MAX_FRAME_DT = 0.1;         // clamp after tab-switch pauses
 const FEEDBACK_CORRECT = 1.9;     // seconds — long enough to read the explanation
 const FEEDBACK_WRONG = 1.5;
 const RESOLVE_POP = 0.38;         // pop animation before outcome evaluation
+const CLEAR_BONUS = 30;           // neutral group popped (puzzle bonus)
+const FALL_BONUS = 10;            // per bubble disconnected by a valid pop
+const BOARD_ATTEMPTS = 10;        // generation candidates before the fallback
 
 export class Game {
   constructor({ root, ui, renderer, layout, audio }) {

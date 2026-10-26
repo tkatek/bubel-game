@@ -132,7 +132,11 @@ export class UI {
           h.appendChild(img);
         }
       }
-      Array.from(h.children).forEach((img, i) => img.classList.toggle('is-lost', i >= state.lives));
+      Array.from(h.children).forEach((img, i) => {
+        const lost = i >= state.lives;
+        img.src = lost ? ASSETS.icons.heartEmpty : ASSETS.icons.heart;
+        img.classList.toggle('is-lost', lost);
+      });
     }
 
     this.el.comboVal.textContent = `×${state.combo + 1}`;

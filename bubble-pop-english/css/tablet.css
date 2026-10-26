@@ -25,13 +25,15 @@
   --bpe-pad: 8px;
   --bpe-header-h: 60px;
 }
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header { min-height: 56px; gap: 10px; }
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 40px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header { min-height: 64px; gap: 10px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 42px; }
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-text { font-size: 17px; }
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-opts .bpe-q-opt { font-size: 13px; }
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color { font-size: 11.5px; padding: 3px 9px 3px 4px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color { font-size: 11.5px; padding: 4px 9px 4px 5px; }
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color-dot { width: 16px; height: 16px; }
-#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question { padding: 9px 20px 10px 13px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question { min-height: 60px; padding: 5px; gap: 9px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book { width: 44px; height: 44px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book img { width: 29px; }
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-settings { width: 48px; height: 48px; }
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-scorebox-content { padding: 5px 16px; }
 #bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-score-value { font-size: 18px; }

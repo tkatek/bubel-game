@@ -2,7 +2,7 @@
 // collision circles, playable bounds, predicted impact and active state.
 // Never shown in production.
 
-export const DEBUG = new URLSearchParams(location.search).has('debug');
+export const DEBUG = typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug');
 
 export class DebugOverlay {
   draw(ctx, game, world) {

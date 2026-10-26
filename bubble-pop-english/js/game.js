@@ -98,6 +98,7 @@ export class Game {
 
   // ---- level / question flow ---------------------------------------------
   startLevel(level) {
+    if (typeof window !== 'undefined' && window.__bpeLog) window.__bpeLog.push(`startLevel:${level}@${Math.round(performance.now())}`);
     if (level < 1 || level > MAX_LEVELS || level > this.save.unlocked) return;
     const token = this.state.runToken + 1;
     this.state.startRun(level);

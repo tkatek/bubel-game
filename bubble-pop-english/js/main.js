@@ -34,13 +34,9 @@ async function boot() {
   ui.setLoad(1, 'Ready!');
 
   const audio = new AudioOut();
-  const game = new Game({ root, ui, renderer, layout: null, audio });
   const layout = new Layout(root, canvas, renderer);
-  game.layout = layout;
+  const game = new Game({ root, ui, renderer, layout, audio });
   const input = new InputController(canvas, game, layout);
-  // expose pointer world position for the debug overlay
-  const origAim = game.setAim.bind(game);
-  game.setAim = (aim) => { if (aim && game.world) { /* keep last pointer for debug */ } origAim(aim); };
   layout.start();
   game.start();
 

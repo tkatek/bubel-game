@@ -32,8 +32,9 @@
 
       <div class="bpe-question" id="questionBar">
         <img class="bpe-panel-art" src="assets/images/optimized/question-bar-body.png" alt="" draggable="false">
-        <div class="bpe-q-book"><img src="assets/icons/icon-book.svg" alt=""></div>
+        <div class="bpe-q-book"><img src="assets/hd/book.png" alt=""></div>
         <div class="bpe-q-text" id="qText" role="heading" aria-level="1">Loading…</div>
+        <div class="bpe-q-opts" id="qOpts"></div>
         <div class="bpe-q-color" id="qColorChip" title=""><span class="bpe-q-color-dot"></span><span class="bpe-q-color-name" id="qColorName"></span></div>
       </div>
 
@@ -89,7 +90,7 @@
     <!-- Center: the playfield -->
     <main class="bpe-stage" id="stage">
       <canvas id="bpeCanvas" aria-label="Bubble shooting playfield"></canvas>
-      <div class="bpe-owl" id="owlMascot"><img src="assets/icons/owl.svg" alt="Owl teacher mascot"></div>
+      <div class="bpe-owl" id="owlMascot"><img src="assets/hd/owl.png" alt="Owl teacher mascot"></div>
     </main>
 
     <!-- Right rail: power-ups -->
@@ -121,9 +122,10 @@
 
     <div class="bpe-m-question" id="mQuestion">
       <div class="bpe-m-q-main">
-        <div class="bpe-q-book bpe-m-q-book"><img src="assets/icons/icon-book.svg" alt=""></div>
+        <div class="bpe-q-book bpe-m-q-book"><img src="assets/hd/book.png" alt=""></div>
         <div class="bpe-q-text bpe-m-q-text" id="qTextM">Loading…</div>
       </div>
+      <div class="bpe-q-opts bpe-m-q-opts" id="qOptsM"></div>
       <div class="bpe-m-q-sub">
         <span class="bpe-m-q-stat"><img src="assets/icons/icon-star-full.svg" class="bpe-m-q-ico" alt=""><span id="scoreValM">0</span></span>
         <span class="bpe-m-q-stat" id="progTextM">1 / 4</span>
@@ -187,7 +189,7 @@
     <section class="bpe-screen" id="screen-loading" aria-label="Loading">
       <img class="bpe-menu-logo" src="assets/icons/logo.svg" alt="Bubble Pop English">
       <div class="bpe-loading-card">
-        <div class="bpe-loading-owl"><img src="assets/icons/owl.svg" alt=""></div>
+        <div class="bpe-loading-owl"><img src="assets/hd/owl.png" alt=""></div>
         <div class="bpe-loading-text" id="loadText">Preparing the classroom…</div>
         <div class="bpe-loading-track"><div class="bpe-loading-fill" id="loadFill"></div></div>
       </div>
@@ -205,7 +207,7 @@
           <button class="bpe-btn" id="btnSoundMenu" type="button"><img id="soundMenuIcon" src="assets/icons/icon-sound-on.svg" alt=""><span>Sound</span></button>
         </div>
       </div>
-      <div class="bpe-menu-owl"><img src="assets/icons/owl.svg" alt="Owl teacher waving"></div>
+      <div class="bpe-menu-owl"><img src="assets/hd/owl.png" alt="Owl teacher waving"></div>
     </section>
 
     <section class="bpe-screen" id="screen-levels" hidden aria-label="Level select">
@@ -287,6 +289,7 @@
   <noscript><div class="bpe-nojs">Bubble Pop English needs JavaScript to run. Please enable JavaScript and reload.</div></noscript>
 </div>
 
+<script>window.__bpeLog=[];window.addEventListener('error',function(e){window.__bpeLog.push('ERR:'+(e.message||e.error));});document.addEventListener('click',function(e){window.__bpeLog.push('click:'+(e.target&&e.target.id||e.target&&e.target.className||e.target&&e.target.tagName)+'@'+Math.round(performance.now()));},true);</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

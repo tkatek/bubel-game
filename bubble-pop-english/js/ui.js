@@ -46,6 +46,7 @@ export class UI {
   }
 
   screen(name) {
+    if (typeof window !== 'undefined' && window.__bpeLog) window.__bpeLog.push(`screen:${name}@${Math.round(performance.now())}`);
     for (const id of SCREENS) {
       const el = this.root.querySelector(`#${id}`);
       if (!el) continue;
@@ -62,6 +63,7 @@ export class UI {
   }
 
   setLoad(pct, text) {
+    if (typeof window !== 'undefined' && window.__bpeLog) window.__bpeLog.push(`load:${(pct * 100) | 0}:${text}@${Math.round(performance.now())}`);
     this.el.loadFill.style.width = `${Math.round(pct * 100)}%`;
     if (text) this.el.loadText.textContent = text;
   }

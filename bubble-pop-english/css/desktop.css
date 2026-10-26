@@ -1,0 +1,69 @@
+/* ============================================================
+   Desktop composition (also drives tablet landscape and the
+   compact landscape-phone variant tuned by tablet.css).
+   header / left status rail / stage / right power-up rail
+   ============================================================ */
+#bpe-root[data-mode="desktop"] .bpe-shell,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-shell {
+  grid-template-areas:
+    "header header header"
+    "railleft stage railright";
+  grid-template-rows: auto 1fr;
+  grid-template-columns: var(--bpe-rail-w) 1fr var(--bpe-pu-rail-w);
+}
+#bpe-root[data-mode="desktop"] .bpe-header,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header { grid-area: header; }
+#bpe-root[data-mode="desktop"] .bpe-rail-left,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-rail-left { grid-area: railleft; }
+#bpe-root[data-mode="desktop"] .bpe-stage,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-stage { grid-area: stage; }
+#bpe-root[data-mode="desktop"] .bpe-rail-right,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-rail-right { grid-area: railright; }
+
+/* header: logo | question banner | score+pause */
+#bpe-root[data-mode="desktop"] .bpe-header,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 74px;
+}
+#bpe-root[data-mode="desktop"] .bpe-logo img,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 52px; width: auto; }
+
+/* compact-but-useful question card (spec: ~80–110px tall, 18–26px text) */
+#bpe-root[data-mode="desktop"] .bpe-question,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
+  padding: 12px 26px 13px 18px;
+  min-height: 0;
+}
+#bpe-root[data-mode="desktop"] .bpe-q-text,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-text { font-size: 20px; }
+#bpe-root[data-mode="desktop"] .bpe-q-book,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book { grid-row: 1 / span 2; width: 42px; }
+#bpe-root[data-mode="desktop"] .bpe-q-opts,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-opts { grid-column: 2; }
+#bpe-root[data-mode="desktop"] .bpe-q-color,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color { grid-row: 1 / span 2; grid-column: 3; }
+
+/* mobile composition elements are absent on desktop */
+#bpe-root[data-mode="desktop"] .bpe-m-top,
+#bpe-root[data-mode="desktop"] .bpe-m-question,
+#bpe-root[data-mode="desktop"] .bpe-m-dock,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-m-top,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-m-question,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-m-dock { display: none; }
+
+/* the stage gets all remaining space; the world letterboxes inside */
+#bpe-root[data-mode="desktop"] .bpe-stage,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-stage { min-height: 0; }
+
+/* wider power-up rail stays narrow */
+#bpe-root[data-mode="desktop"] .bpe-rail-right { width: 100%; }

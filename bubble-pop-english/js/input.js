@@ -52,6 +52,7 @@ export class InputController {
     const w = this.game.world;
     if (!w) return null;
     const wp = w.screenToWorld(local.x, local.y);
+    this.game.lastPointerWorld = wp; // debug overlay reads this
     return validAim(wp.x - w.muzzle.x, wp.y - w.muzzle.y);
   }
 

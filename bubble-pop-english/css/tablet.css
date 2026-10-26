@@ -1,0 +1,46 @@
+/* ============================================================
+   Tablet + compact-landscape tuning.
+   #bpe-root[data-mode="tablet"] covers: portrait tablets (mobile
+   composition, roomier) and short landscape viewports (compact
+   desktop composition). Touch-sized targets everywhere.
+   ============================================================ */
+
+/* ---- tablet portrait: mobile composition with more air ---- */
+#bpe-root[data-mode="tablet"][data-orient="portrait"] {
+  --bpe-pad: 14px;
+}
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-text { font-size: 19px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-opts .bpe-q-opt { font-size: 15.5px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-sub { font-size: 14.5px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-hearts-m img { width: 28px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-pause { width: 52px; height: 52px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-pu { width: 54px; height: 54px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-next { width: 60px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-level-grid { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+/* ---- short landscape (compact desktop composition) ---- */
+#bpe-root[data-mode="tablet"][data-orient="landscape"] {
+  --bpe-rail-w: 170px;
+  --bpe-pu-rail-w: 96px;
+  --bpe-pad: 8px;
+  --bpe-header-h: 60px;
+}
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header { min-height: 56px; gap: 10px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 40px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-text { font-size: 17px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-opts .bpe-q-opt { font-size: 13px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color { font-size: 11.5px; padding: 3px 9px 3px 4px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color-dot { width: 16px; height: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question { padding: 9px 20px 10px 13px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-settings { width: 48px; height: 48px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-scorebox-content { padding: 5px 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-score-value { font-size: 18px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-num { font-size: 26px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-quest { font-size: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-timer { font-size: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-content { gap: 6px; padding: 12px 12px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-block { gap: 2px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-seg { width: 20px; height: 7px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-hearts img { width: 22px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-pu { width: 46px; height: 46px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-powerups-content { gap: 10px; padding: 12px 8px; }

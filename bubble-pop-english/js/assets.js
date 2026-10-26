@@ -69,7 +69,8 @@ const critical = [
 ];
 
 // Preload + decode the images the canvas draws every frame. Panels and icons
-// used via <img>/CSS are allowed to stream in behind this gate.
+// used via <img>/CSS are allowed to stream in behind this gate. Every wait
+// is bounded so boot always terminates with a clear error or success.
 export async function preloadCritical(onProgress) {
   const imgs = new Map();
   let done = 0;
@@ -78,14 +79,16 @@ export async function preloadCritical(onProgress) {
     img.decoding = 'async';
     img.src = url;
     await new Promise((resolve) => {
-      if (img.complete && img.naturalWidth > 0) return resolve();
-      img.addEventListener('load', resolve, { once: true });
-      img.addEventListener('error', () => resolve(new Error(`failed: ${url}`)), { once: true });
+      const finish = (ok) => { clearTimeout(timer); resolve(ok); };
+      const timer = setTimeout(() => finish(false), 8000); // never hang boot
+      if (img.complete && img.naturalWidth > 0) return finish(true);
+      img.addEventListener('load', () => finish(true), { once: true });
+      img.addEventListener('error', () => finish(false), { once: true });
     });
-    try { if (img.decode) await img.decode(); } catch { /* decode() best effort; load already confirmed */ }
+    if (img.naturalWidth === 0) throw new Error(`Asset failed to load: ${url}`);
+    try { if (img.decode) await Promise.race([img.decode(), new Promise((r) => setTimeout(r, 3000))]); } catch { /* decode best effort */ }
     done++;
     onProgress && onProgress(done / critical.length, url);
-    if (img.naturalWidth === 0) throw new Error(`Asset failed to load: ${url}`);
     imgs.set(url, img);
   });
   await Promise.all(jobs);

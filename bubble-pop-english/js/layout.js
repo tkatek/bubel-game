@@ -28,10 +28,27 @@ export class Layout {
     });
     this.ro.observe(this.root);
     this.ro.observe(this.stage);
+    // Some hosts (embedded webviews, emulated/animated viewports) deliver the
+    // final container size late, or drop the trailing ResizeObserver callback
+    // entirely. These redundant triggers cost nothing — apply() no-ops when
+    // the measured rect is unchanged — and keep the composition honest.
+    this.onWinResize = () => measure();
+    window.addEventListener('resize', this.onWinResize);
+    window.addEventListener('orientationchange', this.onWinResize);
+    this.bootPoll = setInterval(measure, 250);
+    setTimeout(() => { if (this.bootPoll) { clearInterval(this.bootPoll); this.bootPoll = 0; } }, 3000);
     measure();
   }
 
-  stop() { if (this.ro) this.ro.disconnect(); if (this.raf) cancelAnimationFrame(this.raf); }
+  stop() {
+    if (this.ro) this.ro.disconnect();
+    if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.bootPoll) clearInterval(this.bootPoll);
+    if (this.onWinResize) {
+      window.removeEventListener('resize', this.onWinResize);
+      window.removeEventListener('orientationchange', this.onWinResize);
+    }
+  }
 
   decideMode(w, h) {
     const landscape = w >= h * 1.02;
@@ -52,6 +69,10 @@ export class Layout {
 
   apply() {
     const rect = this.root.getBoundingClientRect();
+    // skip redundant work: identical rect ⇒ identical mode/canvas/overlays
+    const rectKey = `${Math.round(rect.width)}x${Math.round(rect.height)}x${window.devicePixelRatio || 1}`;
+    if (rectKey === this._lastRectKey) return;
+    this._lastRectKey = rectKey;
     const { mode, orient, device } = this.decideMode(rect.width, rect.height);
     this.mode = mode; this.orient = orient; this.device = device;
     this.root.dataset.mode = mode;

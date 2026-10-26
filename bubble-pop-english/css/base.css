@@ -6,7 +6,7 @@
 #bpe-root {
   --bpe-header-h: 88px;
   --bpe-rail-w: 218px;
-  --bpe-pu-rail-w: 120px;
+  --bpe-pu-rail-w: 152px;
   --bpe-pad: 14px;
 
   position: relative;
@@ -71,23 +71,33 @@
 }
 .bpe-owl img { width: 100%; height: auto; display: block; }
 
-/* ---------- painted panel artwork (9-slice) ---------- */
-.bpe-panel-art {
+/* ---------- painted panel artwork (pure border-image frames) ---------- */
+.bpe-frame {
   position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: fill;
   pointer-events: none;
+  border-style: solid;
+  border-color: transparent;
+  box-sizing: border-box;
 }
-
-/* question banner: stretchable wooden body via border-image */
-.bpe-question { position: relative; }
-.bpe-question .bpe-panel-art {
-  object-fit: none;
+.bpe-frame-question {
   border-image-source: url('../assets/images/optimized/question-bar-body.png');
   border-image-slice: 66 220 70 220 fill;
   border-image-width: 22px 74px 23px 74px;
   border-image-outset: 6px 18px 7px 18px;
-  visibility: visible;
+  border-image-repeat: stretch;
+}
+.bpe-question { position: relative; min-height: 88px; }
+.bpe-frame-status {
+  border-image-source: url('../assets/images/optimized/status-panel.png');
+  border-image-slice: 120 130 120 130 fill;
+  border-image-width: 34px 36px 34px 36px;
+  border-image-repeat: stretch;
+}
+.bpe-frame-powerups {
+  border-image-source: url('../assets/images/optimized/powerups-panel.png');
+  border-image-slice: 150 160 150 160 fill;
+  border-image-width: 40px 42px 40px 42px;
+  border-image-repeat: stretch;
 }
 
 /* ---------- question content ---------- */
@@ -190,19 +200,12 @@
 }
 
 /* ---------- status rail ---------- */
-.bpe-rail-left { position: relative; }
-.bpe-rail-left .bpe-panel-art {
-  object-fit: none;
-  border-image-source: url('../assets/images/optimized/status-panel.png');
-  border-image-slice: 120 130 120 130 fill;
-  border-image-width: 34px 36px 34px 36px;
-}
+.bpe-rail-left { position: relative; align-self: start; }
 .bpe-status-content {
   position: relative; z-index: 2;
-  height: 100%;
   display: flex; flex-direction: column;
-  gap: 10px;
-  padding: 18px 20px;
+  gap: 12px;
+  padding: 20px 20px 24px;
   text-align: center;
 }
 .bpe-status-level { margin-bottom: 2px; }
@@ -232,24 +235,18 @@
 .bpe-hearts img.is-lost { filter: grayscale(1) brightness(.5); opacity: .45; transform: scale(.86); }
 
 .bpe-combo { display: flex; flex-direction: column; gap: 5px; }
+.bpe-combo-head { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .bpe-combo-val { font-size: 20px; font-weight: 800; color: var(--bpe-gold); }
 .bpe-combo-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,.2); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.35); }
 .bpe-combo-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--bpe-gold-deep), var(--bpe-gold)); transition: width .3s var(--bpe-ease-out); }
 .bpe-timer { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
 /* ---------- power-ups rail ---------- */
-.bpe-rail-right { position: relative; }
-.bpe-rail-right .bpe-panel-art {
-  object-fit: none;
-  border-image-source: url('../assets/images/optimized/powerups-panel.png');
-  border-image-slice: 150 160 150 160 fill;
-  border-image-width: 40px 42px 40px 42px;
-}
+.bpe-rail-right { position: relative; align-self: start; }
 .bpe-powerups-content {
   position: relative; z-index: 2;
-  height: 100%;
   display: flex; flex-direction: column; align-items: center;
-  gap: 16px; padding: 20px 12px;
+  gap: 14px; padding: 18px 12px 22px;
 }
 .bpe-powerups-title { margin-bottom: 4px; }
 .bpe-pu {

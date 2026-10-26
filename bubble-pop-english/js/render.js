@@ -156,35 +156,41 @@ export class Renderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const maxW = D * 0.84;
-    let size = D * 0.26;
-    ctx.font = `700 ${size}px Trebuchet MS, Verdana, sans-serif`;
-    if (ctx.measureText(label).width > maxW) {
-      // two lines at the split nearest the middle
-      size = D * 0.21;
-      ctx.font = `700 ${size}px Trebuchet MS, Verdana, sans-serif`;
-      let mid = Math.floor(label.length / 2);
-      let best = mid, bestDist = Infinity;
-      for (let i = 2; i < label.length - 1; i++) {
-        if (label[i] === ' ' || label[i] === '-') {
-          const d = Math.abs(i - mid);
-          if (d < bestDist) { bestDist = d; best = i + 1; }
-        }
-      }
-      const a = label.slice(0, best).trim();
-      const b = label.slice(best).trim();
-      if (ctx.measureText(a).width <= maxW && ctx.measureText(b).width <= maxW) {
-        ctx.fillText(a, x, y - size * 0.58);
-        ctx.fillText(b, x, y + size * 0.58);
-        ctx.restore();
-        return;
-      }
-      // still too wide: keep shrinking on one line
-      while (size > D * 0.11 && ctx.measureText(label).width > maxW) {
-        size -= 1;
-        ctx.font = `700 ${size}px Trebuchet MS, Verdana, sans-serif`;
+    const font = (s) => { ctx.font = `700 ${s}px Trebuchet MS, Verdana, sans-serif`; };
+    // single words: shrink to fit on one line
+    let size = label.length > 7 ? D * 0.22 : D * 0.26;
+    font(size);
+    while (size > D * 0.11 && ctx.measureText(label).width > maxW) {
+      size -= 1;
+      font(size);
+    }
+    if (ctx.measureText(label).width <= maxW) {
+      ctx.fillText(label, x, y + size * 0.06);
+      ctx.restore();
+      return;
+    }
+    // multi-word: split at the space nearest the middle
+    const mid = Math.floor(label.length / 2);
+    let best = -1, bestDist = Infinity;
+    for (let i = 1; i < label.length - 1; i++) {
+      if (label[i] === ' ' || label[i] === '-') {
+        const d = Math.abs(i - mid);
+        if (d < bestDist) { bestDist = d; best = i + 1; }
       }
     }
-    ctx.fillText(label, x, y + size * 0.06);
+    if (best > 0) {
+      const a = label.slice(0, best).trim(), b = label.slice(best).trim();
+      size = D * 0.19;
+      font(size);
+      while (size > D * 0.1 && (ctx.measureText(a).width > maxW || ctx.measureText(b).width > maxW)) {
+        size -= 1;
+        font(size);
+      }
+      ctx.fillText(a, x, y - size * 0.58);
+      ctx.fillText(b, x, y + size * 0.58);
+    } else {
+      ctx.fillText(label, x, y + size * 0.06); // last resort: slight overflow
+    }
     ctx.restore();
   }
 

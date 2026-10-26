@@ -67,3 +67,11 @@
 
 /* wider power-up rail stays narrow */
 #bpe-root[data-mode="desktop"] .bpe-rail-right { width: 100%; }
+
+/* stage overlays: owl bottom-left, next card right of the cannon (reference) */
+.bpe-owl { left: 1.5%; bottom: 2%; width: clamp(70px, 11%, 128px); }
+#bpe-root[data-mode="desktop"] #nextWrap,
+#bpe-root[data-mode="tablet"][data-orient="landscape"] #nextWrap {
+  left: calc(50% + var(--bpe-cannon-half, 120px) + 12px);
+  bottom: max(16px, calc(var(--bpe-muzzle-up, 80px) - 30px));
+}

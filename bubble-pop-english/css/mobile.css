@@ -44,14 +44,12 @@
 .bpe-hearts-m img { width: 24px; }
 .bpe-m-pause {
   width: 44px; height: 44px; flex: 0 0 auto;
+  border: 0; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 222, 130, .55);
-  background: rgba(16, 54, 95, .85);
+  background: none;
   cursor: pointer;
-  box-shadow: var(--bpe-shadow), var(--bpe-inset-light);
 }
-.bpe-m-pause img { width: 22px; }
+.bpe-m-pause img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(4,16,34,.5)); }
 .bpe-m-pause:active { transform: scale(.92); }
 
 /* ---- question card: wraps, stays readable ---- */
@@ -76,7 +74,7 @@
 }
 .bpe-m-q-stat { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
 .bpe-m-q-ico { width: 15px; height: auto; }
-.bpe-segs-m { justify-content: flex-start; }
+.bpe-qbar-m { width: 100%; height: 10px; }
 
 /* ---- bottom dock: power-ups / colour / next preview ---- */
 #bpe-root[data-mode="mobile"] .bpe-m-dock,
@@ -107,13 +105,9 @@
 .bpe-m-color .bpe-q-color-dot { width: 24px; height: 24px; }
 #bpe-root[data-mode="mobile"] .bpe-next,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-next {
-  position: relative; top: auto; left: auto;
+  position: static;
   margin-left: auto;
-  width: 52px;
-  display: flex; flex-direction: column; align-items: center;
 }
-#bpe-root[data-mode="mobile"] .bpe-next .bpe-panel-art,
-#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-next .bpe-panel-art { display: block; }
 
 /* hide the desktop next preview (positioned by layout.js) */
 #bpe-root[data-mode="mobile"] #nextWrap { display: none; }

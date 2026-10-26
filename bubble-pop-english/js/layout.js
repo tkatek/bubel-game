@@ -80,3 +80,4 @@ export class Layout {
     this.nextWrap.style.display = '';
     this.owl.style.display = st.width > 560 && st.height > 380 ? '' : 'none';
   }
+}

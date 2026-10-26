@@ -452,6 +452,10 @@ export class Game {
     // relative to anything else. Native rebuild happens at the next
     // PREPARING_QUESTION boundary.
     this.world.setView(info.cssW, info.cssH, info.dpr);
+    // Overlay hints for CSS (Next card sits right of the cannon).
+    const scale = this.world.view.scale;
+    this.root.style.setProperty('--bpe-cannon-half', `${Math.round((this.world.cannonW / 2) * scale)}px`);
+    this.root.style.setProperty('--bpe-muzzle-up', `${Math.round((this.world.H - this.world.muzzle.y) * scale)}px`);
   }
 
   // Debug helper: current predicted landing for the overlay

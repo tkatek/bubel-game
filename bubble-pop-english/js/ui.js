@@ -43,6 +43,12 @@ export class UI {
       puPopover: q('puPopover'), btnPuDock: q('btnPuDock'), puBadgeDock: q('puBadgeDock'),
       soundMenuIcon: q('soundMenuIcon'), soundPauseIcon: q('soundPauseIcon'),
     };
+    // Dock power-up row badges are attribute-addressed so every rendered
+    // instance (rail, popover, dock row) stays in sync from one state source.
+    for (const kind of ['rainbow', 'heart', 'aim']) {
+      const extra = Array.from(root.querySelectorAll(`[data-badge-for="${kind}"]`));
+      this.el.puBadges[kind] = [...(this.el.puBadges[kind] || []), ...extra];
+    }
     this.toastTimer = 0;
     this.bubbleUrl = {}; // per-colour CSS background URL
     for (const c of BUBBLE_COLORS) this.bubbleUrl[c] = ASSETS.bubbles[c].url;

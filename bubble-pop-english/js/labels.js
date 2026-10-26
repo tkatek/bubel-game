@@ -201,7 +201,7 @@ export function computeLabelLayouts(world, textOf, dpr) {
     layouts.set(cl.option, {
       option: cl.option, cell: cl.cell, mode: 'tag',
       lines: tag.lines, size: tag.size, lineH: tag.lineH,
-      rect: tag.rect, tail: tag.tail, center,
+      rect: tag.rect, tail: tag.tail,
     });
     reserved.push(tag.rect);
     if (tag.overlapped) { overlapFree = false; infeasible.push(cl.option); }
@@ -245,9 +245,6 @@ function placeTag(meas, text, world, cl, anchor, reserved, minSize, snap) {
   }
   const bbox = { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 };
 
-  const others = board.clusters
-    .filter((o) => o !== cl)
-    .flatMap((o) => o.cells.map(([r, c]) => board.cellCenter(r, c, D)));
   const margin = D * 0.12;
   const maxY = occupiedBottom + D * 1.4;                // stay out of the aim corridor
   const gaps = [D * 0.3, D * 0.9, D * 1.55];

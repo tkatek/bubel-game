@@ -16,6 +16,12 @@ async function boot() {
   const root = qs('#bpe-root');
   const ui = new UI(root);
   ui.screen('loading');
+  // Dev-only label rendering harness (?labeltest=1) — probe word sets for the
+  // answer-label cases; real content otherwise.
+  if (new URLSearchParams(location.search).has('labeltest')) {
+    const { applyLabelTest } = await import('./labeltest.js');
+    applyLabelTest();
+  }
   validateLevels();
 
   const canvas = qs('#bpeCanvas');

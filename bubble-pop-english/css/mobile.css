@@ -1,8 +1,15 @@
 /* ============================================================
    Phone portrait composition (also tablet portrait, tuned by
-   tablet.css): compact top row / wrapping question card /
-   flexible playfield / bottom launcher dock
+   tablet.css): compact top HUD / blue-and-gold question card /
+   flexible playfield / bottom launcher dock.
+
+   Hierarchy (top → bottom): HUD row → question card → board +
+   aiming corridor (canvas, 1fr row) → launcher dock. The canvas
+   fills its whole row and the world anchors to its bottom edge
+   (world.fitStage), so the cannon sits directly above the dock
+   and the board directly below the card — no dead bands.
    ============================================================ */
+
 #bpe-root[data-mode="mobile"] .bpe-shell,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-shell {
   --bpe-pad: 8px;
@@ -11,8 +18,9 @@
     "mquestion"
     "stage"
     "mdock";
-  grid-template-rows: auto auto 1fr auto;
-  grid-template-columns: 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
 }
 
 /* desktop composition elements are absent on mobile */
@@ -23,25 +31,49 @@
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-rail-left,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-rail-right { display: none; }
 
-/* ---- top row: level badge / hearts / pause ---- */
+/* buttons: skip the double-tap-zoom delay on game chrome */
+#bpe-root[data-mode="mobile"] button,
+#bpe-root[data-mode="tablet"][data-orient="portrait"] button { touch-action: manipulation; }
+
+/* ---- top HUD row: level/CEFR badge · hearts · score · pause ---- */
 #bpe-root[data-mode="mobile"] .bpe-m-top,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-top {
   grid-area: mtop;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 8px;
+  min-height: 44px;
   padding-top: max(2px, env(safe-area-inset-top));
 }
 .bpe-m-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: rgba(9, 30, 58, .82);
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(180deg, rgba(42, 108, 176, .92), rgba(13, 47, 86, .92));
   border: 2px solid var(--bpe-gold-deep);
   border-radius: 999px;
-  padding: 4px 12px;
-  font-weight: 800; font-size: 14px;
+  padding: 3px 11px;
+  font-weight: 800; font-size: 13.5px;
+  box-shadow: var(--bpe-shadow), var(--bpe-inset-light);
+  white-space: nowrap;
 }
 .bpe-m-badge-lv { color: var(--bpe-white); }
-.bpe-m-badge-cefr { color: var(--bpe-ink); background: var(--bpe-gold); border-radius: 999px; padding: 0 7px; font-size: 11.5px; }
-.bpe-hearts-m { flex: 1; justify-content: flex-start; min-height: 0; }
-.bpe-hearts-m img { width: 24px; }
+.bpe-m-badge-cefr {
+  color: var(--bpe-ink);
+  background: linear-gradient(180deg, var(--bpe-gold), var(--bpe-gold-deep));
+  border-radius: 999px; padding: 1px 7px;
+  font-size: 11px;
+}
+.bpe-hearts-m { flex: 1 1 0; justify-content: center; min-height: 0; gap: 5px; }
+.bpe-hearts-m img { width: 26px; }
+.bpe-m-score {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: linear-gradient(180deg, rgba(42, 108, 176, .92), rgba(13, 47, 86, .92));
+  border: 2px solid rgba(255, 222, 130, .55);
+  border-radius: 999px;
+  padding: 3px 11px 3px 7px;
+  font-size: 13.5px; font-weight: 800; color: var(--bpe-white);
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--bpe-shadow), var(--bpe-inset-light);
+  white-space: nowrap;
+}
+.bpe-m-score img { width: 17px; height: 17px; object-fit: contain; }
 .bpe-m-pause {
   width: 44px; height: 44px; flex: 0 0 auto;
   border: 0; padding: 0;
@@ -52,37 +84,68 @@
 .bpe-m-pause img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(4,16,34,.5)); }
 .bpe-m-pause:active { transform: scale(.92); }
 
-/* ---- question card: wraps, stays readable ---- */
+/* ---- question card: blue field, gold frame, grows with content ---- */
 #bpe-root[data-mode="mobile"] .bpe-m-question,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-question {
   grid-area: mquestion;
   position: relative;
-  display: flex; flex-direction: column; gap: 7px;
-  background: url('../assets/images/optimized/question-bar-body.png') 66 220 70 220 / 20px 68px 21px 68px stretch border-box;
-  background-color: rgba(9, 30, 58, 0.35);
-  padding: 9px 22px 10px 14px;
-  margin: 6px 2px;
+  display: flex; flex-direction: column; gap: 6px;
+  background:
+    linear-gradient(180deg, rgba(127, 216, 255, 0.16), rgba(127, 216, 255, 0) 38%),
+    linear-gradient(180deg, #2a6cb0 0%, #17497f 42%, #0d2f56 100%);
+  border: 2px solid var(--bpe-gold-deep);
+  border-radius: 14px;
+  box-shadow: 0 5px 14px rgba(6, 24, 48, 0.5), inset 0 2px 0 rgba(255, 240, 200, 0.35);
+  padding: 7px 12px 9px;
+  margin: 0 1px;
 }
-.bpe-m-q-main { display: flex; align-items: flex-start; gap: 10px; }
-.bpe-m-q-book { width: 30px; flex: 0 0 auto; }
-.bpe-m-q-text { font-size: 16.5px; }
-.bpe-q-opts.bpe-m-q-opts { gap: 4px 12px; }
+/* hairline gold fillet inside the card, echoing the desktop frame */
+#bpe-root[data-mode="mobile"] .bpe-m-question::after,
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-question::after {
+  content: '';
+  position: absolute; inset: 2.5px;
+  border-radius: 11px;
+  border: 1.5px solid rgba(255, 206, 60, 0.3);
+  pointer-events: none;
+}
+
+/* main row: book icon · [type chip / question / context] stack */
+.bpe-m-q-main { position: relative; z-index: 2; display: flex; align-items: flex-start; gap: 9px; }
+.bpe-m-q-book { width: 30px; flex: 0 0 auto; margin-top: 2px; }
+.bpe-m-q-body { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.bpe-m-q-body .bpe-q-type {
+  font-size: 9.5px; line-height: 1.6;
+  color: var(--bpe-ink);
+  background: linear-gradient(180deg, var(--bpe-gold), var(--bpe-gold-deep));
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgba(10, 14, 30, 0.35);
+  padding: 0 8px;
+}
+.bpe-m-q-text { font-size: 17px; line-height: 1.3; }
+.bpe-m-q-body .bpe-q-context { font-size: 13.5px; line-height: 1.35; }
+.bpe-q-opts.bpe-m-q-opts { position: relative; z-index: 2; gap: 4px 12px; }
 .bpe-m-q-opts .bpe-q-opt { font-size: 13.5px; }
+
+/* sub row: progress · timer · combo (score lives in the top HUD) */
 .bpe-m-q-sub {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
-  font-size: 13px; font-weight: 700; color: var(--bpe-cream);
+  position: relative; z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px 14px;
+  font-size: 12.5px; font-weight: 700; color: var(--bpe-cream);
 }
 .bpe-m-q-stat { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
-.bpe-m-q-ico { width: 15px; height: auto; }
-.bpe-qbar-m { width: 100%; height: 10px; }
+.bpe-m-q-stat b { color: var(--bpe-cyan); font-weight: 800; margin-right: 2px; }
+.bpe-m-combo { color: var(--bpe-gold); font-weight: 800; }
+.bpe-qbar-m { position: relative; z-index: 2; width: 100%; height: 9px; }
 
-/* ---- bottom dock: power-ups / colour / next preview ---- */
+/* ---- bottom dock: power-ups · colour chip · next preview ---- */
 #bpe-root[data-mode="mobile"] .bpe-m-dock,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-dock {
   grid-area: mdock;
-  display: flex; align-items: center; gap: 12px;
-  padding: 6px 4px max(8px, env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 2px max(7px, env(safe-area-inset-bottom));
 }
+/* phones: single popover trigger — the full row appears on tablets */
+.bpe-m-pu-row { display: none; }
 .bpe-m-pu {
   position: relative;
   width: 48px; height: 48px; flex: 0 0 auto;
@@ -91,23 +154,34 @@
   background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.35), rgba(255,255,255,.06) 55%), rgba(16, 54, 95, .85);
   cursor: pointer;
   box-shadow: var(--bpe-shadow);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
 }
-.bpe-m-pu img { width: 60%; height: 60%; }
+.bpe-m-pu img { width: 60%; height: 60%; object-fit: contain; }
 .bpe-m-pu:active { transform: scale(.93); }
 .bpe-m-color {
   display: inline-flex; align-items: center; gap: 7px;
-  background: rgba(9, 30, 58, .82);
+  background: linear-gradient(180deg, rgba(42, 108, 176, .92), rgba(13, 47, 86, .92));
   border: 2px solid var(--bpe-gold-deep);
   border-radius: 999px;
-  padding: 4px 12px 4px 5px;
+  padding: 4px 12px 4px 6px;
   font-size: 13px; font-weight: 700; color: var(--bpe-cream);
+  white-space: nowrap;
 }
-.bpe-m-color .bpe-q-color-dot { width: 24px; height: 24px; }
+.bpe-m-color .bpe-q-color-dot { width: 24px; height: 24px; background: #4d96ff center/cover; }
 #bpe-root[data-mode="mobile"] .bpe-next,
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-next {
   position: static;
   margin-left: auto;
+  padding: 5px 9px 7px;
 }
+#bpe-root[data-mode="mobile"] .bpe-next .bpe-next-bubble,
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-next .bpe-next-bubble { width: 30px; height: 30px; }
 
 /* hide the desktop next preview (positioned by layout.js) */
-#bpe-root[data-mode="mobile"] #nextWrap { display: none; }
+#bpe-root[data-mode="mobile"] #nextWrap,
+#bpe-root[data-mode="tablet"][data-orient="portrait"] #nextWrap { display: none; }
+
+/* owl: hidden during phone gameplay (menu keeps its own mascot);
+   tablet portrait may show it when the stage is tall (layout.js) */
+#bpe-root[data-mode="mobile"][data-device="phone"] .bpe-owl { display: none; }

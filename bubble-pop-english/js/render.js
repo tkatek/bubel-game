@@ -149,66 +149,44 @@ export class Renderer {
   drawBoard(game, world, px) {
     const D = world.D;
     const ctx = this.ctx;
-    const st = game.state;
-    // label lookup: option id -> bubble word / letter
-    const labelOf = new Map();
-    if (st.question) {
-      for (const o of st.question.options) {
-        labelOf.set(o.id, st.useLetters ? o.id.toUpperCase() : o.text.trim());
+    const S = world.view.scale * world.view.dpr;   // device px per world unit
+    const snap = (v) => Math.round(v * S) / S;     // crisp label edges on HiDPI
+    const layouts = world.labels;
+    const answerClusters = layouts
+      ? world.board.clusters.filter((cl) => cl.option != null && layouts.has(cl.option))
+      : [];
+
+    // pass 1: soft halo under each intact answer cluster — groups the three
+    // bubbles into one readable unit without touching collision geometry
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.13)';
+    for (const cl of answerClusters) {
+      if (!cl.cells.every(([r, c]) => world.board.has(r, c))) continue;
+      for (const [r, c] of cl.cells) {
+        const p = world.board.cellCenter(r, c, D);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, D * 0.6, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
+    ctx.restore();
+
+    // pass 2: bubbles (labels never render per-bubble — one label per cluster)
     for (const b of world.board.entries()) {
       const p = world.board.cellCenter(b.r, b.c, D);
       const spr = this.bubbleSprite(b.color, px);
       ctx.drawImage(spr, p.x - D / 2, p.y - D / 2, D, D);
-      const label = b.option != null ? labelOf.get(b.option) : null;
-      if (label) this.drawBubbleLabel(ctx, label, p.x, p.y, D);
     }
-  }
 
-  // Dark navy word centred on the bubble, shrunk/wrapped to fit.
-  drawBubbleLabel(ctx, label, x, y, D) {
-    ctx.save();
-    ctx.fillStyle = '#0c2547';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const maxW = D * 0.84;
-    const font = (s) => { ctx.font = `700 ${s}px Trebuchet MS, Verdana, sans-serif`; };
-    // single words: shrink to fit on one line
-    let size = label.length > 7 ? D * 0.22 : D * 0.26;
-    font(size);
-    while (size > D * 0.11 && ctx.measureText(label).width > maxW) {
-      size -= 1;
-      font(size);
+    // pass 3: one label per answer cluster, drawn above every bubble so an
+    // attached tag stays legible over the field. Labels vanish with their
+    // cluster when it pops.
+    for (const cl of answerClusters) {
+      const lay = layouts.get(cl.option);
+      if (!world.board.has(lay.cell[0], lay.cell[1])) continue;
+      if (lay.mode === 'inside') drawInsideLabel(ctx, lay, snap);
+      else drawTagLabel(ctx, lay, snap);
     }
-    if (ctx.measureText(label).width <= maxW) {
-      ctx.fillText(label, x, y + size * 0.06);
-      ctx.restore();
-      return;
-    }
-    // multi-word: split at the space nearest the middle
-    const mid = Math.floor(label.length / 2);
-    let best = -1, bestDist = Infinity;
-    for (let i = 1; i < label.length - 1; i++) {
-      if (label[i] === ' ' || label[i] === '-') {
-        const d = Math.abs(i - mid);
-        if (d < bestDist) { bestDist = d; best = i + 1; }
-      }
-    }
-    if (best > 0) {
-      const a = label.slice(0, best).trim(), b = label.slice(best).trim();
-      size = D * 0.19;
-      font(size);
-      while (size > D * 0.1 && (ctx.measureText(a).width > maxW || ctx.measureText(b).width > maxW)) {
-        size -= 1;
-        font(size);
-      }
-      ctx.fillText(a, x, y - size * 0.58);
-      ctx.fillText(b, x, y + size * 0.58);
-    } else {
-      ctx.fillText(label, x, y + size * 0.06); // last resort: slight overflow
-    }
-    ctx.restore();
   }
 
   // Falling bubbles: gravity-driven, slight sideways drift, drawn between

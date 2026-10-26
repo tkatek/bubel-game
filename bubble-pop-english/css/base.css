@@ -107,6 +107,30 @@ html:has(#bpe-root), body:has(#bpe-root) { margin: 0; padding: 0; overflow: hidd
 
 /* ---------- question content ---------- */
 .bpe-q-main { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+/* small challenge-type chip ("Vocabulary", "Grammar", "Conversation"…) */
+.bpe-q-type {
+  align-self: flex-start;
+  font-size: 10.5px; font-weight: 800;
+  letter-spacing: .12em; text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--bpe-cyan);
+  background: rgba(9, 30, 58, 0.6);
+  border: 1px solid rgba(127, 200, 255, 0.35);
+  border-radius: 999px;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+/* dialogue / reading context lines (structured, safely rendered) */
+.bpe-q-context {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+  font-size: 14px; line-height: 1.35; font-weight: 600;
+  color: var(--bpe-cream);
+  text-shadow: 0 1px 2px rgba(20, 12, 0, 0.55);
+  overflow-wrap: anywhere;
+}
+.bpe-q-context[hidden] { display: none; }
+.bpe-q-context-line b { color: var(--bpe-gold); margin-right: 5px; font-weight: 800; }
 .bpe-q-text {
   position: relative; z-index: 2;
   font-size: 19px; line-height: 1.25;

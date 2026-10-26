@@ -47,9 +47,8 @@ export class GameState {
     this.combo = 0;                 // consecutive correct answers
     this.mistakes = 0;              // drives stars (0→3★, 1→2★, ≥2→1★)
     this.activeTime = 0;            // elapsed seconds while the learner can act
-    this.question = null;           // { id, prompt, options, correct, explain }
+    this.question = null;           // full question object from questions.js: { id, level, cefr, type, prompt, context?, options, correct, explain }
     this.optionsOrder = [];         // shuffled option objects
-    this.useLetters = false;        // sentence-length answers → letter badges
     this.loadedColor = 'blue';      // colour in the cannon (queue head)
     this.nextColor = 'blue';        // next bubble up (queue[1], HUD preview)
     this.queue = [];                // deterministic ammunition queue for this question

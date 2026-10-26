@@ -322,10 +322,12 @@ export function densityTargets(level, cols) {
 
 // Build a full puzzle board: four answer clusters in `loadedColor` plus a
 // neutral obstacle field in the other three colours. Deterministic in
-// (cols, level, options order, loadedColor, seed). Returns null when a
-// reasonable board cannot be built for this seed (caller reseeds / falls
-// back to the curated layout family).
-export function buildPuzzleBoard({ cols, level, options, loadedColor, seed }) {
+// (cols, level, options order, loadedColor, seed). `obstacleBudget`
+// (LEVEL_CONFIG) is a floor on neutral cells — density windows from the
+// task targets stay authoritative. Returns null when a reasonable board
+// cannot be built for this seed (caller reseeds / falls back to the curated
+// layout family).
+export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obstacleBudget = 0 }) {
   if (options.length !== 4) return null;
   const rng = mulberry32(seed);
   const neutralColors = BUBBLE_COLORS.filter((c) => c !== loadedColor);
@@ -340,7 +342,8 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed }) {
 
   const board = new HexBoard(cols, clusters);
   const { lo, hi } = densityTargets(level, cols);
-  const wantNeutral = Math.max(0, Math.round((lo + Math.min(hi, lo + 8)) / 2) - 12);
+  const maxNeutral = Math.max(0, hi - 12);
+  const wantNeutral = Math.min(maxNeutral, Math.max(Math.round((lo + Math.min(hi, lo + 8)) / 2) - 12, Math.min(obstacleBudget, maxNeutral)));
 
   // Cluster-adjacency limit: a placed neutral may touch at most one cluster,
   // so popping it can never expose a cell that bridges two answers.

@@ -2,7 +2,7 @@
 // shot lifecycle from input to feedback, power-ups, pause, level flow.
 // Every async boundary captures the run token; stale work no-ops.
 
-import { LEVELS, validateLevels, shuffledOptions, needsLetterBadges, QUESTION_TYPES } from './questions.js';
+import { LEVELS, validateLevels, shuffledOptions, QUESTION_TYPES } from './questions.js';
 import { BUBBLE_COLORS } from './assets.js';
 import {
   buildClusters, validateClusters,
@@ -10,6 +10,8 @@ import {
 } from './board.js';
 import { makeWorld, stepProjectile, resolveLanding, sweepShot, auditReachability } from './world.js';
 import { checkBoardSolvable } from './solver.js';
+import { computeLabelLayouts } from './labels.js';
+import { configFor } from './levels.js';
 import { GameState, PHASE, LIFE_CAP } from './state.js';
 import { mulberry32, nextId, clamp } from './util.js';
 import { loadSave, persist, MAX_LEVELS } from './storage.js';
@@ -147,9 +149,6 @@ export class Game {
     st.loadedColor = BUBBLE_COLORS[Math.floor(rng() * 4)];
     st.rainbowArmed = false;
     st.aimBoost = false;
-    // Bubble labels show the answer word; questions with sentence-length
-    // answers fall back to letter badges + a banner list (readability).
-    st.useLetters = needsLetterBadges(st.optionsOrder);
     this.clearedToastShown = false;
     this.questionLoadedColor = st.loadedColor; // restoreBoard rewinds to this
 
@@ -161,16 +160,24 @@ export class Game {
     if (st.phase !== PHASE.AIMING) st.go(PHASE.AIMING);
   }
 
+  // Option id → trimmed answer text for the active question.
+  answerTextById() {
+    const map = new Map((this.state.question?.options || []).map((o) => [o.id, String(o.text).trim()]));
+    return (id) => map.get(id) || '';
+  }
+
   // Build the puzzle board + ammunition queue for the current question.
   // Candidates come from the deterministic generator; each must pass the
   // structural validator AND the real-physics solver gate (direct winning
   // shot for the correct cluster, every option selectable, queue colours
-  // match real neutral groups). The first passing candidate wins; the
-  // curated template family is the guaranteed fallback.
+  // match real neutral groups) AND the answer-label layout gate (every
+  // cluster's label finds a non-overlapping anchor). The first passing
+  // candidate wins; the curated template family is the guaranteed fallback.
   buildPuzzle() {
     const st = this.state;
     this.cols = this.colsForLayout();
     const letters = st.optionsOrder.map((o) => o.id);
+    const textFor = this.answerTextById();
 
     let built = null;
     for (let attempt = 0; attempt < BOARD_ATTEMPTS && !built; attempt++) {
@@ -189,6 +196,12 @@ export class Game {
         correctOption: st.question.correct, queue, options: letters,
       });
       if (!gate.ok) continue;
+      // Label gate: a candidate whose clusters leave no room for overlap-free
+      // answer labels is passed over — the next seed re-arranges the clusters.
+      // Text size is never shrunk below the readable floor to force a fit.
+      const probe = makeWorld(this.cols, puzzle.clusters);
+      probe.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
+      if (computeLabelLayouts(probe, textFor, this.layout.dpr).infeasible.length) continue;
       built = { clusters: puzzle.clusters, queue };
     }
 
@@ -208,6 +221,7 @@ export class Game {
     this.renderer.clearTransient();
     this.world = makeWorld(this.cols, built.clusters);
     this.world.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
+    this.world.labels = computeLabelLayouts(this.world, textFor, this.layout.dpr);
   }
 
   // Rebuild the identical board + queue (after a wrong answer / miss: the
@@ -409,14 +423,20 @@ export class Game {
         st.combo++;
         st.qIndex++;
         st.go(PHASE.FEEDBACK);
-        this.feedbackT = FEEDBACK_CORRECT;
+        // Learning feedback: positive note + the explanation. Longer
+        // explanations (advanced levels) hold a little longer on screen,
+        // capped so the arcade flow never stalls.
+        const explainMs = 2100 + Math.min(1500, Math.round(st.question.explain.length * 9));
+        this.feedbackT = Math.max(FEEDBACK_CORRECT, explainMs / 1000);
         this.feedbackKind = { correct: true, gain, explain: st.question.explain };
         this.audio.play('correct');
         this.ui.renderHud(st);
-        this.ui.toast(`Correct! +${gain}`, st.question.explain, 2100);
+        this.ui.toast(`Correct! +${gain}`, st.question.explain, explainMs);
         return;
       }
-      // wrong answer: one heart, retry the same question
+      // wrong answer: one heart, retry the same question — coach with a
+      // type-aware nudge instead of only a red cross (never reveals the
+      // answer; the question stays on the board)
       st.combo = 0;
       st.mistakes++;
       st.lives--;
@@ -425,7 +445,9 @@ export class Game {
       this.feedbackKind = { correct: false, wrong: true };
       this.audio.play('wrong');
       this.ui.renderHud(st);
-      this.ui.toast('Not quite…', 'That group was the wrong answer — one heart lost. Read the question again!', 2000);
+      const info = QUESTION_TYPES[st.question.type];
+      const nudge = (info && info.nudge) || 'Read the question again carefully.';
+      this.ui.toast('Not quite…', `${nudge} One heart lost — try another answer!`, 2200);
       return;
     }
 
@@ -481,7 +503,7 @@ export class Game {
     const st = this.state;
     st.go(PHASE.GAME_OVER);
     this.ui.gameoverSub.textContent = `Level ${st.level} — Question ${Math.min(st.qIndex + 1, 4)} of 4`;
-    this.ui.goTip.textContent = 'Tip: the letter on each bubble group matches an answer choice. Pop the group whose letter you believe!';
+    this.ui.goTip.textContent = 'Tip: each answer sits on a bubble group — pop the group whose label answers the question!';
     this.ui.screen('gameover');
     this.ui.showGameChrome(false);
     this.audio.play('gameover');
@@ -576,6 +598,12 @@ export class Game {
     // relative to anything else. Native rebuild happens at the next
     // PREPARING_QUESTION boundary.
     this.world.setView(info.cssW, info.cssH, info.dpr);
+    // Answer labels depend on the view scale (readable-size floors in CSS px),
+    // so re-fit them for the new geometry. Cluster arrangement itself only
+    // changes at question boundaries (buildPuzzle), never mid-question.
+    if (this.state.question) {
+      this.world.labels = computeLabelLayouts(this.world, this.answerTextById(), info.dpr);
+    }
     // Overlay hints for CSS (Next card sits right of the cannon).
     const scale = this.world.view.scale;
     this.root.style.setProperty('--bpe-cannon-half', `${Math.round((this.world.cannonW / 2) * scale)}px`);

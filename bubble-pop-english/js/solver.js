@@ -67,11 +67,13 @@ export function simulateShot(sim, angleDeg, color) {
   return { landed: true, popped: 0, poppedOptions: [], falls: 0, cell: [r, c] };
 }
 
-// One fan pass with the loaded colour: how many distinct angles pop each
-// option directly (window size), and which options are selectable at all.
+// One fan pass with the loaded colour: how many distinct aim windows each
+// option can be popped from (distinct landing cells + winning angle count),
+// and the first winning angle. Windows are what the LEVEL_CONFIG gate and
+// the dev harness measure.
 export function surveyDirectShots(sim, loadedColor, stepDeg = 1.5) {
-  const sim2 = { cols: sim.cols, world: sim.world, board: sim.board };
   const windows = new Map(); // option -> Set of landing signatures
+  const angles = new Map();  // option -> winning angle count
   const angleFor = new Map(); // option -> first winning angle
   for (const deg of angleFan(stepDeg)) {
     const probe = sim.withBoard(sim.board.clone());
@@ -80,10 +82,13 @@ export function surveyDirectShots(sim, loadedColor, stepDeg = 1.5) {
     const opt = out.poppedOptions[0];
     if (!windows.has(opt)) windows.set(opt, new Set());
     windows.get(opt).add(out.cell.join(','));
+    angles.set(opt, (angles.get(opt) || 0) + 1);
     if (!angleFor.has(opt)) angleFor.set(opt, deg);
   }
   const report = {};
-  for (const [opt, sigs] of windows) report[opt] = { angles: sigs.size, first: angleFor.get(opt) };
+  for (const [opt, sigs] of windows) {
+    report[opt] = { cells: sigs.size, angles: angles.get(opt) || 0, first: angleFor.get(opt) };
+  }
   return report;
 }
 
@@ -103,16 +108,23 @@ export function planDepth2(sim, option, loadedColor, setupColors) {
 }
 
 // The runtime gate. `clusters` must be the full puzzle board (answers +
-// neutrals). Returns { ok, reasons, direct, windows }.
-export function checkBoardSolvable({ cols, clusters, loadedColor, correctOption, queue, options }) {
+// neutrals). `minAngles` (LEVEL_CONFIG.minDirectAngles) is the fewest
+// winning aim windows every option must keep — the gate prefers boards the
+// player would call comfortable, and the generator reseeds when it fails.
+// Returns { ok, reasons, direct }.
+export function checkBoardSolvable({ cols, clusters, loadedColor, correctOption, queue, options, minAngles = 1 }) {
   const reasons = [];
   const sim = makeSim(cols, clusters);
 
-  // 1. Direct shots: every option must have at least one winning angle with
-  //    the loaded colour, and the correct one a comfortable window.
+  // 1. Direct shots: every option must be poppable right now with the loaded
+  //    colour, through at least minAngles distinct aim windows.
   const direct = surveyDirectShots(sim, loadedColor);
+  const need = Math.max(1, minAngles);
   for (const opt of options) {
-    if (!direct[opt] || direct[opt].angles < 1) reasons.push(`option ${opt} has no direct winning shot`);
+    const win = direct[opt];
+    if (!win || win.angles < need) {
+      reasons.push(`option ${opt} has ${win ? win.angles : 0} winning angles (need ${need})`);
+    }
   }
   if (!direct[correctOption]) reasons.push(`correct option ${correctOption} not directly poppable`);
 
@@ -138,7 +150,7 @@ export function checkBoardSolvable({ cols, clusters, loadedColor, correctOption,
     if (i > 0 && queue[i - 1] !== loadedColor) reasons.push(`queue has consecutive non-loaded colours at ${i - 1},${i}`);
   }
 
-  return { ok: reasons.length === 0, reasons, direct, windows: direct };
+  return { ok: reasons.length === 0, reasons, direct };
 }
 
 // Dev-harness helper: minimum shot depth to pop each option (bounded ≤ 2),

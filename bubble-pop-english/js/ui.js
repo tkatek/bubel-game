@@ -73,39 +73,39 @@ export class UI {
 
   renderQuestion(state) {
     const q = state.question;
-    const opts = state.optionsOrder;
-    const letter = { a: 'A', b: 'B', c: 'C', d: 'D' };
-    // Answers live on the bubbles; the banner list appears only when the
-    // answer text is too long to read on a bubble (letter-badge fallback).
-    this.root.classList.toggle('show-opts', !!state.useLetters);
+    // Answers live entirely on the bubble clusters — inside the designated
+    // bubble or in an attached label (see labels.js). No banner list, no
+    // letter badges: every answer is always readable where it is played.
     const typeLabel = (QUESTION_TYPES[q.type] && QUESTION_TYPES[q.type].label) || 'Question';
-    for (const [typeEl, textEl, ctxEl, optsEl] of [
-      [this.el.qType, this.el.qText, this.el.qContext, this.el.qOpts],
-      [this.el.qTypeM, this.el.qTextM, this.el.qContextM, this.el.qOptsM],
+    for (const [typeEl, textEl, ctxEl] of [
+      [this.el.qType, this.el.qText, this.el.qContext],
+      [this.el.qTypeM, this.el.qTextM, this.el.qContextM],
     ]) {
       if (!textEl) continue;
       if (typeEl) typeEl.textContent = typeLabel;
       textEl.textContent = q.prompt;
       this.renderContext(ctxEl, q.context);
-      if (optsEl) {
-        optsEl.textContent = '';
-        if (!state.useLetters) continue;
-        for (const o of opts) {
-          // built from nodes only — question data never touches innerHTML
-          const li = document.createElement('span');
-          li.className = 'bpe-q-opt';
-          const badge = document.createElement('b');
-          badge.textContent = letter[o.id] || '?';
-          li.appendChild(badge);
-          li.appendChild(document.createTextNode(o.text));
-          optsEl.appendChild(li);
-        }
-      }
     }
     const cname = COLOR_NAMES[state.loadedColor];
     this.el.qColorName.textContent = cname;
     this.el.mColorName.textContent = cname;
     this.el.qColorDot.style.background = `url(${this.bubbleUrl[state.loadedColor]}) center/cover`;
+    this.renderLoadedColors(state);
+  }
+
+  // Cannon bubble + "Next" preview reflect the live ammunition queue; called
+  // from renderQuestion (new question) and renderHud (after every resolved
+  // shot advances the queue).
+  renderLoadedColors(state) {
+    const loaded = this.bubbleUrl[state.loadedColor] || '';
+    const next = this.bubbleUrl[state.nextColor] || loaded;
+    this.el.qColorName.textContent = COLOR_NAMES[state.loadedColor];
+    this.el.mColorName.textContent = COLOR_NAMES[state.loadedColor];
+    this.el.qColorDot.style.background = `url(${loaded}) center/cover`;
+    const mDot = this.el.mColorChip && this.el.mColorChip.querySelector('.bpe-q-color-dot');
+    if (mDot) mDot.style.background = `url(${loaded}) center/cover`;
+    this.el.nextBubble.style.backgroundImage = `url(${next})`;
+    this.el.nextBubbleM.style.backgroundImage = `url(${next})`;
   }
 
   // Dialogue / reading context rendered as structured lines: a plain string
@@ -184,8 +184,8 @@ export class UI {
     this.el.scoreVal.textContent = state.score.toLocaleString('en-US');
     this.el.scoreValM.textContent = state.score.toLocaleString('en-US');
 
-    this.el.nextBubble.style.backgroundImage = `url(${this.bubbleUrl[state.loadedColor]})`;
-    this.el.nextBubbleM.style.backgroundImage = `url(${this.bubbleUrl[state.loadedColor]})`;
+    // cannon bubble + next-up preview (live ammunition queue)
+    this.renderLoadedColors(state);
 
     // power-ups: counters + disabled states
     const pu = state.powerups;

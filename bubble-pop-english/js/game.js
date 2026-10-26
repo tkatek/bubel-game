@@ -2,7 +2,7 @@
 // shot lifecycle from input to feedback, power-ups, pause, level flow.
 // Every async boundary captures the run token; stale work no-ops.
 
-import { LEVELS, validateLevels, shuffledOptions } from './questions.js';
+import { LEVELS, validateLevels, shuffledOptions, needsLetterBadges, QUESTION_TYPES } from './questions.js';
 import { BUBBLE_COLORS } from './assets.js';
 import {
   buildClusters, validateClusters,
@@ -22,6 +22,10 @@ const RESOLVE_POP = 0.38;         // pop animation before outcome evaluation
 const CLEAR_BONUS = 30;           // neutral group popped (puzzle bonus)
 const FALL_BONUS = 10;            // per bubble disconnected by a valid pop
 const BOARD_ATTEMPTS = 10;        // generation candidates before the fallback
+
+function cellsOf(clusters) {
+  return clusters.flatMap((cl) => cl.cells.map(([r, c]) => ({ r, c, color: cl.color, option: cl.option ?? null })));
+}
 
 export class Game {
   constructor({ root, ui, renderer, layout, audio }) {
@@ -145,9 +149,11 @@ export class Game {
     st.aimBoost = false;
     // Bubble labels show the answer word; questions with sentence-length
     // answers fall back to letter badges + a banner list (readability).
-    st.useLetters = st.optionsOrder.some((o) => o.text.trim().length > 12);
+    st.useLetters = needsLetterBadges(st.optionsOrder);
+    this.clearedToastShown = false;
+    this.questionLoadedColor = st.loadedColor; // restoreBoard rewinds to this
 
-    this.buildBoard();
+    this.buildPuzzle();
     this.ui.renderQuestion(st);
     this.ui.renderHud(st);
     this.ui.renderTimer(st.activeTime);
@@ -155,34 +161,62 @@ export class Game {
     if (st.phase !== PHASE.AIMING) st.go(PHASE.AIMING);
   }
 
-  buildBoard() {
+  // Build the puzzle board + ammunition queue for the current question.
+  // Candidates come from the deterministic generator; each must pass the
+  // structural validator AND the real-physics solver gate (direct winning
+  // shot for the correct cluster, every option selectable, queue colours
+  // match real neutral groups). The first passing candidate wins; the
+  // curated template family is the guaranteed fallback.
+  buildPuzzle() {
     const st = this.state;
     this.cols = this.colsForLayout();
-    const rng = mulberry32(this.qSeed);
     const letters = st.optionsOrder.map((o) => o.id);
-    let clusters = buildClusters(this.cols, letters, st.loadedColor, rng);
-    // structural + real-physics reachability guard (defensive: fall back to
-    // the canonical un-mirrored packing if a variant ever fails)
-    const errs = validateClusters(this.cols, clusters);
-    const world = makeWorld(this.cols, clusters);
-    const rep = auditReachability(world, letters);
-    if (errs.length || Math.min(...Object.values(rep)) < 5) {
-      console.warn('BPE: board variant rejected, using canonical packing', errs, rep);
-      clusters = buildClusters(this.cols, letters, st.loadedColor, mulberry32(1));
-      if (validateClusters(this.cols, clusters).length) throw new Error('board template invalid');
+
+    let built = null;
+    for (let attempt = 0; attempt < BOARD_ATTEMPTS && !built; attempt++) {
+      const seed = (this.qSeed + attempt * 7919) >>> 0;
+      const puzzle = buildPuzzleBoard({
+        cols: this.cols, level: st.level, options: letters, loadedColor: st.loadedColor, seed,
+      });
+      if (!puzzle) continue;
+      const errs = validateBoard(this.cols, cellsOf(puzzle.clusters), {
+        loadedColor: st.loadedColor, ...puzzle.targets,
+      });
+      if (errs.length) continue;
+      const queue = buildAmmunitionQueue({ neutralGroups: puzzle.neutralGroups, loadedColor: st.loadedColor, seed });
+      const gate = checkBoardSolvable({
+        cols: this.cols, clusters: puzzle.clusters, loadedColor: st.loadedColor,
+        correctOption: st.question.correct, queue, options: letters,
+      });
+      if (!gate.ok) continue;
+      built = { clusters: puzzle.clusters, queue };
     }
-    this.world = makeWorld(this.cols, clusters);
+
+    if (!built) {
+      // Curated fallback: legacy audited four-cluster packing (no neutrals).
+      const clusters = buildClusters(this.cols, letters, st.loadedColor, mulberry32(1));
+      if (validateClusters(this.cols, clusters).length) throw new Error('board template invalid');
+      const world = makeWorld(this.cols, clusters);
+      const rep = auditReachability(world, letters);
+      if (Math.min(...Object.values(rep)) < 3) throw new Error('fallback board unreachable');
+      built = { clusters, queue: buildAmmunitionQueue({ neutralGroups: [], loadedColor: st.loadedColor, seed: this.qSeed }) };
+    }
+
+    st.queue = built.queue;
+    st.loadedColor = st.queue[0];
+    st.nextColor = st.queue[1] ?? st.queue[0];
+    this.renderer.clearTransient();
+    this.world = makeWorld(this.cols, built.clusters);
     this.world.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
   }
 
-  // Rebuild the identical board (after a wrong answer / miss: the board must
-  // return to a clean, solvable state for the same question).
+  // Rebuild the identical board + queue (after a wrong answer / miss: the
+  // board must return to a clean, solvable state for the same question).
+  // Everything derives from qSeed + the question's initial loaded colour.
   restoreBoard() {
     const st = this.state;
-    const letters = st.optionsOrder.map((o) => o.id);
-    const clusters = buildClusters(this.cols, letters, st.loadedColor, mulberry32(this.qSeed));
-    this.world = makeWorld(this.cols, clusters);
-    this.world.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
+    st.loadedColor = this.questionLoadedColor;
+    this.buildPuzzle();
   }
 
   // ---- input hooks --------------------------------------------------------
@@ -224,6 +258,29 @@ export class Game {
   }
 
   // ---- shot resolution ----------------------------------------------------
+  // Rainbow bubbles match any colour: pick the neighbour colour whose group
+  // (with the landing cell) is largest, preferring groups containing an
+  // answer cluster so the power-up can always resolve a question.
+  rainbowLandingColor(r, c) {
+    const board = this.world.board;
+    const colors = new Map(); // color -> { size, hasOption }
+    for (const [nr, nc] of board.neighbors(r, c)) {
+      const cell = board.get(nr, nc);
+      if (!cell) continue;
+      if (!colors.has(cell.color)) colors.set(cell.color, { size: 0, hasOption: false });
+      const agg = colors.get(cell.color);
+      agg.size = board.groupAt(nr, nc).length;
+      agg.hasOption = agg.hasOption || cell.option != null;
+    }
+    let best = null;
+    for (const [color, agg] of colors) {
+      if (agg.size < 2) continue; // a group of 2 + landing = 3 = match
+      const score = (agg.hasOption ? 100 : 0) + agg.size;
+      if (!best || score > best.score) best = { color, score };
+    }
+    return best ? best.color : null;
+  }
+
   beginResolve(event) {
     const st = this.state;
     if (!st.shot) return;
@@ -239,10 +296,11 @@ export class Game {
     }
 
     const [r, c] = landing.cell;
-    // rainbow matches any colour, otherwise the colour must equal the loaded
-    // colour (monochrome boards make every hit compatible by construction)
-    const cellColor = st.shot.rainbow ? null : st.shot.color;
-    this.world.board.set(r, c, { color: st.shot.color, option: null });
+    // Rainbow matches any colour; otherwise the shot keeps its loaded colour
+    // (neutral boards never share the answer colour, so a loaded bubble can
+    // only ever join answer clusters).
+    const landColor = st.shot.rainbow ? (this.rainbowLandingColor(r, c) || st.shot.color) : st.shot.color;
+    this.world.board.set(r, c, { color: landColor, option: null });
     const group = this.world.board.groupAt(r, c);
 
     if (group.length >= 3) {
@@ -256,8 +314,11 @@ export class Game {
         const chosen = [...opts][0];
         const centers = group.map(([gr, gc]) => this.world.board.cellCenter(gr, gc, this.world.D));
         for (const [gr, gc] of group) this.world.board.remove(gr, gc);
-        this.renderer.spawnPopBurst(centers, st.shot.color);
-        this.pendingOutcome = { kind: 'popped', option: chosen };
+        // grid is now final; anything left unsupported falls
+        const falls = this.world.board.dropUnsupported();
+        this.renderer.spawnPopBurst(centers, landColor);
+        this.spawnFallers(falls);
+        this.pendingOutcome = { kind: 'popped', option: chosen, falls: falls.length };
         st.go(PHASE.RESOLVING);
         this.resolveT = RESOLVE_POP;
         this.audio.play('pop');
@@ -267,14 +328,23 @@ export class Game {
         // Validated boards make this impossible; recover without penalty.
         console.warn('BPE: ambiguous landing (touched two clusters) — recovered without penalty');
         for (const [gr, gc] of group) this.world.board.remove(gr, gc);
-        this.world.board.remove(r, c);
+        this.world.board.dropUnsupported();
         st.shot = null;
         this.restoreBoard();
         st.go(PHASE.AIMING);
         return;
       }
-      // group ≥3 but no option (pure projectile cluster — not possible with
-      // monochrome templates; treat as miss below)
+      // pure neutral match → obstacle cleared, the same question continues
+      const centers = group.map(([gr, gc]) => this.world.board.cellCenter(gr, gc, this.world.D));
+      for (const [gr, gc] of group) this.world.board.remove(gr, gc);
+      const falls = this.world.board.dropUnsupported();
+      this.renderer.spawnPopBurst(centers, landColor);
+      this.spawnFallers(falls);
+      this.pendingOutcome = { kind: 'cleared', popped: group.length, falls: falls.length };
+      st.go(PHASE.RESOLVING);
+      this.resolveT = RESOLVE_POP;
+      this.audio.play('pop');
+      return;
     }
 
     // genuine miss: projectile attached without a match — remove it, restore
@@ -283,12 +353,53 @@ export class Game {
     this.resolveT = RESOLVE_POP * 0.6;
   }
 
+  // Shift the ammunition queue after a fully resolved shot. The queue never
+  // runs dry of winning shots: extensions stay on the loaded colour, which
+  // the solver gate guarantees can always pop the correct cluster directly.
+  advanceQueue() {
+    const st = this.state;
+    if (!st.queue.length) return;
+    st.queue.shift();
+    if (st.queue.length < 2) st.queue.push(st.loadedColor);
+    st.loadedColor = st.queue[0];
+    st.nextColor = st.queue[1] ?? st.queue[0];
+  }
+
+  spawnFallers(cells) {
+    if (!cells.length) return;
+    const fallers = cells.map((f) => {
+      const p = this.world.board.cellCenter(f.r, f.c, this.world.D);
+      return { x: p.x, y: p.y, color: f.color, vy: -20 - Math.random() * 30, vx: (Math.random() - 0.5) * 30, t: 0 };
+    });
+    this.renderer.spawnFallers(fallers);
+  }
+
   finishResolve() {
     const st = this.state;
     const out = this.pendingOutcome;
     this.pendingOutcome = null;
     st.shot = null;
+    this.advanceQueue();
+    this.ui.renderHud(st);
     if (!out) { st.go(PHASE.AIMING); return; }
+
+    if (out.kind === 'cleared') {
+      // neutral group popped: puzzle bonus, same question continues — never
+      // treated as a wrong English answer
+      const gain = CLEAR_BONUS + FALL_BONUS * out.falls + 5 * Math.max(0, out.popped - 3);
+      st.score += gain;
+      st.go(PHASE.AIMING);
+      this.audio.play('pop');
+      this.ui.toast(
+        this.clearedToastShown ? `Cleared! +${gain}` : 'Obstacle cleared!',
+        this.clearedToastShown
+          ? `Puzzle bonus +${gain} — now answer the question!`
+          : 'Those were not answers — clear them for bonus points, then pop the word group you choose!',
+        1600,
+      );
+      this.clearedToastShown = true;
+      return;
+    }
 
     if (out.kind === 'popped') {
       const correct = out.option === st.question.correct;

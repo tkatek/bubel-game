@@ -1,11 +1,13 @@
 // Canvas renderer. One transform per frame (dpr × world scale + letterbox
 // offset) — never accumulated. Sprites are cached at cell size × dpr and
 // rebuilt only when the view scale changes. Draw order (back → front):
-// board bubbles → cluster badges → aim guide → loaded bubble → cannon →
-// projectile → particles → debug overlay.
+// cluster glows → board bubbles → answer labels → fallers → aim guide →
+// loaded bubble → cannon → projectile → particles → debug overlay.
 
 import { ASSETS, BUBBLE_COLORS, COLOR_HEX } from './assets.js';
+import { drawInsideLabel, drawTagLabel } from './labels.js';
 import { sweepShot, resolveLanding } from './world.js';
+import { clamp } from './util.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -14,6 +16,7 @@ export class Renderer {
     this.spriteCache = new Map();     // key: `${color}:${px}` -> canvas
     this.cannonSprite = null;         // key px
     this.particles = [];
+    this.fallers = [];                // bubbles dropping after support loss
     this.recoil = 0;                  // seconds remaining
     this.badgePulse = 0;
     this.debug = null;                // set by debug overlay module
@@ -30,6 +33,19 @@ export class Renderer {
       }
     }
     if (this.particles.length > 260) this.particles.splice(0, this.particles.length - 260);
+  }
+
+  // Bubbles that lost support: spawned by game.js after an atomic grid
+  // update, animated here with simple gravity until they leave the world.
+  spawnFallers(fallers) {
+    this.fallers.push(...fallers);
+    if (this.fallers.length > 80) this.fallers.splice(0, this.fallers.length - 80);
+  }
+
+  // Board was rebuilt (new question / restore) — drop stale effects.
+  clearTransient() {
+    this.fallers.length = 0;
+    this.particles.length = 0;
   }
 
   bubbleSprite(color, px) {
@@ -120,6 +136,7 @@ export class Renderer {
     this.badgePulse = now;
 
     this.drawBoard(game, world, px);
+    this.drawFallers(world, dt, px);
     this.drawGuide(game, world);
     this.drawLoaded(game, world, px);
     this.drawCannon(game, world, px);
@@ -192,6 +209,29 @@ export class Renderer {
       ctx.fillText(label, x, y + size * 0.06); // last resort: slight overflow
     }
     ctx.restore();
+  }
+
+  // Falling bubbles: gravity-driven, slight sideways drift, drawn between
+  // the board and the aim guide so they pass in front of what remains.
+  drawFallers(world, dt, px) {
+    if (!this.fallers.length) return;
+    const ctx = this.ctx;
+    const G = 46 * world.D; // world units / s² — tuned to read as a drop
+    for (let i = this.fallers.length - 1; i >= 0; i--) {
+      const f = this.fallers[i];
+      f.t += dt;
+      f.vy += G * dt;
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      if (f.y > world.H + world.D) { this.fallers.splice(i, 1); continue; }
+      const spr = this.bubbleSprite(f.color, px);
+      ctx.save();
+      ctx.globalAlpha = clamp(1.6 - f.t, 0.25, 1);
+      ctx.translate(f.x, f.y);
+      ctx.rotate(Math.sin(f.t * 6 + f.x) * 0.12);
+      ctx.drawImage(spr, -world.D / 2, -world.D / 2, world.D, world.D);
+      ctx.restore();
+    }
   }
 
   drawGuide(game, world) {

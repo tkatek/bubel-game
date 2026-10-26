@@ -4,6 +4,7 @@
 import { ASSETS, BUBBLE_COLORS, COLOR_NAMES } from './assets.js';
 import { fmtTime, clamp } from './util.js';
 import { MAX_LEVELS } from './storage.js';
+import { CEFR_FOR_LEVEL, QUESTION_TYPES } from './questions.js';
 
 const SCREENS = ['screen-loading', 'screen-menu', 'screen-levels', 'screen-howto', 'screen-pause',
   'screen-complete', 'screen-gameover'];
@@ -15,6 +16,7 @@ export class UI {
     this.el = {
       loadText: q('loadText'), loadFill: q('loadFill'),
       qText: q('qText'), qTextM: q('qTextM'), qOpts: root.querySelector('#qOpts'), qOptsM: root.querySelector('#qOptsM'),
+      qType: q('qType'), qTypeM: q('qTypeM'), qContext: q('qContext'), qContextM: q('qContextM'),
       qColorChip: q('qColorChip'), qColorName: q('qColorName'), qColorDot: root.querySelector('.bpe-q-color-dot'),
       mColorChip: q('mColorChip'), mColorName: q('mColorName'),
       levelNum: q('levelNum'), levelCefr: q('levelCefr'), levelNumM: q('levelNumM'), levelCefrM: q('levelCefrM'),
@@ -76,16 +78,26 @@ export class UI {
     // Answers live on the bubbles; the banner list appears only when the
     // answer text is too long to read on a bubble (letter-badge fallback).
     this.root.classList.toggle('show-opts', !!state.useLetters);
-    for (const [textEl, optsEl] of [[this.el.qText, this.el.qOpts], [this.el.qTextM, this.el.qOptsM]]) {
+    const typeLabel = (QUESTION_TYPES[q.type] && QUESTION_TYPES[q.type].label) || 'Question';
+    for (const [typeEl, textEl, ctxEl, optsEl] of [
+      [this.el.qType, this.el.qText, this.el.qContext, this.el.qOpts],
+      [this.el.qTypeM, this.el.qTextM, this.el.qContextM, this.el.qOptsM],
+    ]) {
       if (!textEl) continue;
+      if (typeEl) typeEl.textContent = typeLabel;
       textEl.textContent = q.prompt;
+      this.renderContext(ctxEl, q.context);
       if (optsEl) {
         optsEl.textContent = '';
         if (!state.useLetters) continue;
         for (const o of opts) {
+          // built from nodes only — question data never touches innerHTML
           const li = document.createElement('span');
           li.className = 'bpe-q-opt';
-          li.innerHTML = `<b>${letter[o.id]}</b>${escapeHtml(o.text)}`;
+          const badge = document.createElement('b');
+          badge.textContent = letter[o.id] || '?';
+          li.appendChild(badge);
+          li.appendChild(document.createTextNode(o.text));
           optsEl.appendChild(li);
         }
       }
@@ -94,6 +106,32 @@ export class UI {
     this.el.qColorName.textContent = cname;
     this.el.mColorName.textContent = cname;
     this.el.qColorDot.style.background = `url(${this.bubbleUrl[state.loadedColor]}) center/cover`;
+  }
+
+  // Dialogue / reading context rendered as structured lines: a plain string
+  // becomes one line, { who, line } gets a bolded speaker. textContent only.
+  renderContext(el, context) {
+    if (!el) return;
+    el.textContent = '';
+    const lines = Array.isArray(context) ? context : [];
+    el.hidden = lines.length === 0;
+    for (const entry of lines) {
+      const line = document.createElement('div');
+      line.className = 'bpe-q-context-line';
+      if (entry && typeof entry === 'object' && typeof entry.line === 'string') {
+        if (entry.who) {
+          const who = document.createElement('b');
+          who.textContent = `${entry.who}:`;
+          line.appendChild(who);
+        }
+        const text = document.createElement('span');
+        text.textContent = entry.line;
+        line.appendChild(text);
+      } else {
+        line.textContent = String(entry);
+      }
+      el.appendChild(line);
+    }
   }
 
   renderHud(state) {
@@ -174,7 +212,7 @@ export class UI {
     this.el.timerValM.textContent = t;
   }
 
-  cefrFor(level) { return ['A1', 'A1', 'A1', 'A2', 'A2', 'A2', 'B1', 'B1', 'B1', 'B2', 'B2', 'B2', 'C1', 'C1', 'C2'][level - 1]; }
+  cefrFor(level) { return CEFR_FOR_LEVEL[level - 1] || 'A1'; }
 
   toast(title, body, ms = 1900) {
     this.el.toastTitle.textContent = title;
@@ -241,6 +279,5 @@ export class UI {
   }
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-}
+// escapeHtml helper removed: option chips are built from DOM nodes now, so
+// question data can never reach innerHTML.

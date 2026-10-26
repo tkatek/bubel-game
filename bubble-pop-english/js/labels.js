@@ -165,12 +165,15 @@ export function computeLabelLayouts(world, textOf, dpr) {
   const minTag = TAG_MIN_CSS_PX / scale;
   const meas = measurer();
 
-  const clusters = board.clusters
+  // Answer clusters only — neutral obstacle bubbles carry no label. Ordered
+  // top-left first so upper clusters claim the premium anchor spots.
+  const answerClusters = board.clusters
+    .filter((cl) => cl.option != null)
     .map((cl) => ({ ...cl, cell: designateLabelCell(cl.cells, board) }))
     .sort((a, b) => {
       const pa = board.cellCenter(a.cell[0], a.cell[1], D);
       const pb = board.cellCenter(b.cell[0], b.cell[1], D);
-      return pa.y - pb.y || pa.x - pb.x;                // reading order
+      return pa.y - pb.y || pa.x - pb.x;
     });
 
   const layouts = new Map();
@@ -178,7 +181,7 @@ export function computeLabelLayouts(world, textOf, dpr) {
   const reserved = [];                                  // label rects claimed so far
   let overlapFree = true;
 
-  for (const cl of clusters) {
+  for (const cl of answerClusters) {
     const text = String(textOf(cl.option) || '').trim();
     const center = board.cellCenter(cl.cell[0], cl.cell[1], D);
     const cellRect = { x: center.x - D / 2, y: center.y - D / 2, w: D, h: D };
@@ -223,28 +226,30 @@ function placeTag(meas, text, world, cl, anchor, reserved, minSize, snap) {
   const w = fit.textW + padX * 2 + D * 0.1;             // + border breathing room
   const h = fit.lines.length * fit.lineH + padY * 2 + D * 0.1;
 
-  // Cluster bounds (cell centres ± D/2) and the bottom of the occupied rows.
+  // Cluster bounds (cell centres ± D/2) plus the deepest occupied row of the
+  // board — labels may lean into the aim corridor a little, never pile up in
+  // front of the cannon lane.
   let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-  for (const [r, c] of cl.cells) {
-    const p = board.cellCenter(r, c, D);
-    bx0 = Math.min(bx0, p.x - D / 2); by0 = Math.min(by0, p.y - D / 2);
-    bx1 = Math.max(bx1, p.x + D / 2); by1 = Math.max(by1, p.y + D / 2);
+  const own = new Set(cl.cells.map(([r, c]) => `${r},${c}`));
+  const others = [];
+  let occupiedBottom = -Infinity;
+  for (const b of board.entries()) {
+    const p = board.cellCenter(b.r, b.c, D);
+    if (own.has(`${b.r},${b.c}`)) {
+      bx0 = Math.min(bx0, p.x - D / 2); by0 = Math.min(by0, p.y - D / 2);
+      bx1 = Math.max(bx1, p.x + D / 2); by1 = Math.max(by1, p.y + D / 2);
+    } else {
+      others.push(p);
+    }
+    occupiedBottom = Math.max(occupiedBottom, p.y + D / 2);
   }
   const bbox = { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 };
-  let row4Bottom = by1;
-  for (const other of board.clusters) {
-    if (other === cl) continue;
-    for (const [r, c] of other.cells) {
-      const p = board.cellCenter(r, c, D);
-      row4Bottom = Math.max(row4Bottom, p.y + D / 2);
-    }
-  }
 
   const others = board.clusters
     .filter((o) => o !== cl)
     .flatMap((o) => o.cells.map(([r, c]) => board.cellCenter(r, c, D)));
   const margin = D * 0.12;
-  const maxY = row4Bottom + D * 1.4;                    // stay out of the aim corridor
+  const maxY = occupiedBottom + D * 1.4;                // stay out of the aim corridor
   const gaps = [D * 0.3, D * 0.9, D * 1.55];
   const dirs = [[0, -1], [-1, 0], [1, 0], [-1, -1], [1, -1], [0, 1], [-1, 1], [1, 1]];
 
@@ -255,11 +260,10 @@ function placeTag(meas, text, world, cl, anchor, reserved, minSize, snap) {
       rx = dir[0] < 0 ? bbox.x - gap - w : dir[0] > 0 ? bbox.x + bbox.w + gap : anchor.x - w / 2;
       ry = dir[1] < 0 ? bbox.y - gap - h : dir[1] > 0 ? bbox.y + bbox.h + gap : anchor.y - h / 2;
       const rect = { x: rx, y: ry, w, h };
-      const out =
-        rx < margin || ry < margin || rx + w > W - margin || ry + h > maxY;
+      const out = rx < margin || ry < margin || rx + w > W - margin || ry + h > maxY;
       const hitsLabels = reserved.filter((r2) => rectsOverlap(rect, r2)).length;
       const hitsCells = others.filter((p) => rectTouchesCircle(rect, p, D * 0.58)).length;
-      const corridor = ry + h > row4Bottom + D * 0.2 ? 1 : 0;
+      const corridor = ry + h > occupiedBottom + D * 0.2 ? 1 : 0;
       candidates.push({ rect, cost: hitsLabels * 12 + hitsCells * 6 + corridor * 3 + gap / D + (dir[1] > 0 ? 0.4 : 0), blocked: out || hitsLabels > 0 || hitsCells > 0 });
     }
   }

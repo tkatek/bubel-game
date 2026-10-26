@@ -489,3 +489,65 @@ html:has(#bpe-root), body:has(#bpe-root) { margin: 0; padding: 0; overflow: hidd
 
 /* ---------- nojs ---------- */
 .bpe-nojs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bpe-navy-deep); color: var(--bpe-cream); font-size: 18px; padding: 30px; text-align: center; }
+
+/* ============================================================
+   Gameplay juice (task: rewards & personality)
+   Owl mood reactions, star pop-in, trophy, combo pulse.
+   All animations are small and the global prefers-reduced-motion
+   rule above flattens them to instant states automatically.
+   ============================================================ */
+
+@keyframes bpe-owl-happy-kf {
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(-4deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  70% { transform: translateY(-5px) rotate(3deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes bpe-owl-oops-kf {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-2deg); }
+  40% { transform: translateX(6px) rotate(2deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+.bpe-owl.bpe-owl-happy { animation: bpe-owl-happy-kf 1s var(--bpe-ease-pop); }
+.bpe-owl.bpe-owl-oops { animation: bpe-owl-oops-kf .8s ease-in-out; }
+
+@keyframes bpe-star-pop-kf {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  70% { transform: scale(1.35) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.bpe-stars img.bpe-star-pop {
+  animation: bpe-star-pop-kf .5s var(--bpe-ease-pop) backwards;
+}
+.bpe-stars img.is-off { animation: none; }
+
+.bpe-trophy {
+  width: 84px; height: auto; align-self: center;
+  filter: drop-shadow(0 6px 12px rgba(4, 16, 34, .6));
+  animation: bpe-owl-happy-kf 1.4s var(--bpe-ease-pop);
+}
+
+.bpe-complete-badge {
+  align-self: center;
+  font-size: 13.5px; font-weight: 800; letter-spacing: .04em;
+  color: var(--bpe-ink);
+  background: linear-gradient(180deg, var(--bpe-gold), var(--bpe-gold-deep));
+  border: 2px solid rgba(255, 255, 255, .55);
+  border-radius: 999px;
+  padding: 5px 16px;
+  box-shadow: 0 3px 8px rgba(4, 16, 34, .45);
+}
+.bpe-complete-badge[hidden] { display: none; }
+
+@keyframes bpe-bump-kf {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.bpe-combo-val.bpe-bump, .bpe-m-combo.bpe-bump { display: inline-block; animation: bpe-bump-kf .4s var(--bpe-ease-pop); }
+
+.bpe-result-wide { grid-column: 1 / -1; }

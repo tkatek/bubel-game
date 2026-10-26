@@ -32,13 +32,14 @@ function cellsOf(clusters) {
 }
 
 // One candidate pipeline — mirrors game.js buildPuzzle() attempt loop
-// (including the LEVEL_CONFIG gate knobs).
+// (including the LEVEL_CONFIG gate knobs and the density retreat).
 function buildQuestion({ cols, level, q, qSeed: seed, loadedColor, optionsOrder }) {
   const letters = optionsOrder.map((o) => o.id);
   const cfg = configFor(level);
+  const biasFor = (attempt) => (attempt < 5 ? 0.55 : attempt < 8 ? 0.3 : 0.08);
   for (let attempt = 0; attempt < 10; attempt++) {
     const s = (seed + attempt * 7919) >>> 0;
-    const puzzle = buildPuzzleBoard({ cols, level, options: letters, loadedColor, seed: s, obstacleBudget: cfg.obstacleBudget });
+    const puzzle = buildPuzzleBoard({ cols, level, options: letters, loadedColor, seed: s, obstacleBudget: cfg.obstacleBudget, densityBias: biasFor(attempt) });
     if (!puzzle) continue;
     const errs = validateBoard(cols, cellsOf(puzzle.clusters), { loadedColor, ...puzzle.targets });
     if (errs.length) continue;
@@ -127,8 +128,9 @@ let determinismOk = true;
     const loadedColor = BUBBLE_COLORS[Math.floor(rng() * 4)];
     const a = buildQuestion({ cols, level: lv.level, q, qSeed: seed, loadedColor, optionsOrder });
     const b = buildQuestion({ cols, level: lv.level, q, qSeed: seed, loadedColor, optionsOrder });
+    if (!a || !b) { determinismOk = false; failures++; console.log(`✗ determinism: board unbuildable at cols=${cols}`); continue; }
     const sig = (r) => JSON.stringify(r.puzzle.clusters.map((c) => [c.option, c.color, c.cells]));
-    if (!a || !b || sig(a) !== sig(b)) { determinismOk = false; failures++; console.log(`✗ determinism broken at cols=${cols}`); }
+    if (sig(a) !== sig(b)) { determinismOk = false; failures++; console.log(`✗ determinism broken at cols=${cols}`); }
   }
   if (determinismOk) console.log('determinism: same seed → identical board ✓');
 }
@@ -153,6 +155,63 @@ let determinismOk = true;
   }
   if (bad) { failures++; console.log(`✗ queue invariant violations: ${bad}`); }
   else console.log('ammunition queue: no consecutive non-loaded colours ✓');
+}
+
+// Stepped-flight regression: the live projectile advances in bounded substeps
+// (stepProjectile) while the aim guide and solver use one full sweep — both
+// must agree on the landing for every angle, especially after wall bounces.
+{
+  const { makeWorld, sweepShot, resolveLanding } = await import('../bubble-pop-english/js/world.js');
+  let mismatches = 0;
+  let checked = 0;
+  const lv = LEVELS[8]; // board with obstacles; wall bounces are relevant here
+  const q = lv.questions[0];
+  const cols = 11;
+  const seed = qSeed(lv.level, 0, 1);
+  const rng = mulberry32(seed);
+  const optionsOrder = shuffledOptions(q, rng);
+  const loadedColor = BUBBLE_COLORS[Math.floor(rng() * 4)];
+  const built = buildQuestion({ cols, level: lv.level, q, qSeed: seed, loadedColor, optionsOrder });
+  if (built) {
+    for (let deg = 16; deg <= 164; deg += 3) {
+      const rad = (deg * Math.PI) / 180;
+      const dir = { x: Math.cos(rad), y: -Math.sin(rad) };
+      const world = makeWorld(cols, built.puzzle.clusters);
+      // full sweep (guide/solver path)
+      const ev = sweepShot(world, world.muzzle, dir, world.W * 3);
+      const predicted = ev.type === 'bubble' || ev.type === 'ceiling' ? resolveLanding(world, ev) : { ok: false };
+      // stepped flight (live projectile path, mirrors stepProjectile)
+      const shot = { pos: { ...world.muzzle }, dir: { ...dir }, trail: [], bounces: 0 };
+      let ended = null;
+      for (let i = 0; i < 4000 && !ended; i++) {
+        let remaining = world.speed * (1 / 120);
+        const stepMax = world.D * 0.25;
+        while (remaining > 1e-6 && !ended) {
+          const step = Math.min(stepMax, remaining);
+          remaining -= step;
+          const sub = sweepShot(world, shot.pos, shot.dir, step);
+          shot.trail.push({ ...shot.pos });
+          if (sub.bounces) shot.bounces += sub.bounces;
+          if (sub.type === 'exhausted') { shot.pos = sub.point; if (sub.dir) shot.dir = sub.dir; continue; }
+          shot.pos = sub.point;
+          ended = sub;
+        }
+      }
+      const stepped = ended && (ended.type === 'bubble' || ended.type === 'ceiling')
+        ? resolveLanding(world, ended)
+        : { ok: false };
+      checked++;
+      const agree = predicted.ok === stepped.ok &&
+        (!predicted.ok || !stepped.ok ||
+          (predicted.cell[0] === stepped.cell[0] && predicted.cell[1] === stepped.cell[1]));
+      if (!agree) {
+        mismatches++;
+        if (mismatches <= 3) console.log(`   ✗ deg ${deg}: predicted ${JSON.stringify(predicted.cell)} stepped ${JSON.stringify(stepped.cell)}`);
+      }
+    }
+  }
+  if (mismatches) { failures++; console.log(`✗ stepped-flight disagrees with guide sweep on ${mismatches}/${checked} angles`); }
+  else console.log(`stepped flight matches guide sweep on ${checked} angles ✓`);
 }
 
 console.log('————————————————');

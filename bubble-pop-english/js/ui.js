@@ -26,6 +26,7 @@ export class UI {
       comboVal: q('comboVal'), comboFill: q('comboFill'), comboValM: q('comboValM'),
       timerVal: q('timerVal'), timerValM: q('timerValM'),
       scoreVal: q('scoreVal'), scoreValM: q('scoreValM'),
+      shotsVal: q('shotsVal'), shotsValM: q('shotsValM'),
       nextBubble: q('nextBubble'), nextBubbleM: q('nextBubbleM'),
       puBadges: {
         rainbow: [q('puBadgeRainbow'), q('puBadgeRainbowM')],
@@ -37,7 +38,10 @@ export class UI {
       levelGrid: q('levelGrid'), totalStars: q('totalStars'),
       pauseInfo: q('pauseInfo'),
       completeTitle: q('completeTitle'), completeSub: q('completeSub'), completeStars: q('completeStars'),
+      completeTrophy: q('completeTrophy'), completeBadge: q('completeBadge'),
       resScore: q('resScore'), resQuestions: q('resQuestions'), resMistakes: q('resMistakes'), resTime: q('resTime'),
+      resShots: q('resShots'), resEff: q('resEff'), resBest: q('resBest'),
+      owl: q('owlMascot'),
       gameoverSub: q('gameoverSub'), goTip: q('goTip'),
       btnPlayLabel: q('btnPlayLabel'),
       puPopover: q('puPopover'), btnPuDock: q('btnPuDock'), puBadgeDock: q('puBadgeDock'),
@@ -52,6 +56,20 @@ export class UI {
     this.toastTimer = 0;
     this.bubbleUrl = {}; // per-colour CSS background URL
     for (const c of BUBBLE_COLORS) this.bubbleUrl[c] = ASSETS.bubbles[c].url;
+    this.lastCombo = 0;
+    this.owlTimer = 0;
+  }
+
+  // Mascot reactions: a quick happy bounce or an oops shake. Reduced-motion
+  // users simply see the owl rest (the CSS media rule flattens the keyframes).
+  owlMood(mood, ms = 1100) {
+    const owl = this.el.owl;
+    if (!owl) return;
+    clearTimeout(this.owlTimer);
+    owl.classList.remove('bpe-owl-happy', 'bpe-owl-oops');
+    void owl.offsetWidth; // restart the animation on back-to-back moods
+    owl.classList.add(mood === 'happy' ? 'bpe-owl-happy' : 'bpe-owl-oops');
+    this.owlTimer = setTimeout(() => owl.classList.remove('bpe-owl-happy', 'bpe-owl-oops'), ms);
   }
 
   screen(name) {
@@ -186,9 +204,23 @@ export class UI {
     this.el.comboVal.textContent = `×${state.combo + 1}`;
     this.el.comboValM.textContent = `×${state.combo + 1}`;
     this.el.comboFill.style.width = `${clamp(state.combo * 25, 0, 100)}%`;
+    // pulse the multiplier when a correct answer extends the streak
+    if (state.combo > this.lastCombo) {
+      for (const el of [this.el.comboVal, this.el.comboValM]) {
+        if (!el) continue;
+        el.classList.remove('bpe-bump');
+        void el.offsetWidth;
+        el.classList.add('bpe-bump');
+      }
+    }
+    this.lastCombo = state.combo;
 
     this.el.scoreVal.textContent = state.score.toLocaleString('en-US');
     this.el.scoreValM.textContent = state.score.toLocaleString('en-US');
+
+    // shots spent on the current question (efficiency feedback)
+    if (this.el.shotsVal) this.el.shotsVal.textContent = state.shotsQuestion;
+    if (this.el.shotsValM) this.el.shotsValM.textContent = `Shots ${state.shotsQuestion}`;
 
     // cannon bubble + next-up preview (live ammunition queue)
     this.renderLoadedColors(state);
@@ -256,21 +288,41 @@ export class UI {
     this.el.totalStars.textContent = `${stars} / 45`;
   }
 
-  showResults({ score, mistakes, time, stars, level }) {
-    this.el.resScore.textContent = score;
+  showResults({ score, mistakes, time, stars, level, shots = 0, efficiency = 100, best, perfect = false,
+    title = '', cefr = '', totalStars = 0 }) {
+    this.el.resScore.textContent = score.toLocaleString('en-US');
     this.el.resQuestions.textContent = '4 / 4';
     this.el.resMistakes.textContent = mistakes;
     this.el.resTime.textContent = fmtTime(time);
-    this.el.completeTitle.textContent = level >= MAX_LEVELS ? 'Course Complete!' : 'Level Complete!';
+    if (this.el.resShots) this.el.resShots.textContent = shots;
+    if (this.el.resEff) this.el.resEff.textContent = `${efficiency}%`;
+    if (this.el.resBest) this.el.resBest.textContent = best ? `${best.score.toLocaleString('en-US')} · ${'★'.repeat(best.stars)}` : score.toLocaleString('en-US');
+    if (this.el.completeBadge) {
+      this.el.completeBadge.textContent = perfect ? 'Perfect clear · one shot per answer!' : '';
+      this.el.completeBadge.hidden = !perfect;
+    }
+
+    const final = level >= MAX_LEVELS;
+    this.el.completeTitle.textContent = final ? 'Course Complete!' : 'Level Complete!';
+    if (this.el.completeSub) {
+      this.el.completeSub.textContent = final
+        ? `All 15 levels finished — ${totalStars} / 45 stars collected. Outstanding work!`
+        : `${title || `Level ${level}`}${cefr ? ` · ${cefr}` : ''}`;
+    }
+    if (this.el.completeTrophy) this.el.completeTrophy.hidden = !final;
+
+    // Stars pop in one after another; reduced-motion flattens this via CSS.
     this.el.completeStars.textContent = '';
     for (let s = 1; s <= 3; s++) {
       const img = document.createElement('img');
       img.src = ASSETS.icons.star;
       img.alt = s <= stars ? 'star' : 'no star';
       if (s > stars) img.className = 'is-off';
+      else img.className = 'bpe-star-pop';
+      img.style.animationDelay = `${0.15 + s * 0.22}s`;
       this.el.completeStars.appendChild(img);
     }
-    this.root.querySelector('#btnNextLevel').style.display = level >= MAX_LEVELS ? 'none' : '';
+    this.root.querySelector('#btnNextLevel').style.display = final ? 'none' : '';
   }
 
   setSoundIcons(on) {

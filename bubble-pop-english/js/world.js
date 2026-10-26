@@ -132,7 +132,10 @@ export function sweepShot(world, from, dir, maxDist) {
     path.push({ ...pos });
     remaining -= travel;
   }
-  return { type: 'exhausted', point: { ...pos }, path, bounces };
+  // `dir` reports the post-bounce heading so the stepped projectile can
+  // resume the reflected leg; without it a sub-sweep that ends exhausted
+  // after a wall bounce loses the reflection and tunnels through the wall.
+  return { type: 'exhausted', point: { ...pos }, path, bounces, dir: { x: v.x, y: v.y } };
 }
 
 // Resolve where a finished shot lands on the grid. Returns
@@ -163,6 +166,7 @@ export function stepProjectile(world, shot, dt) {
     if (ev.bounces) shot.bounces = (shot.bounces || 0) + ev.bounces; // bank-shot stat
     if (ev.type === 'exhausted') {
       shot.pos = ev.point;
+      if (ev.dir) shot.dir = ev.dir; // keep wall reflections across sub-sweeps
       continue;
     }
     shot.pos = ev.point;

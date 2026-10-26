@@ -17,22 +17,60 @@ export class Renderer {
     this.cannonSprite = null;         // key px
     this.particles = [];
     this.fallers = [];                // bubbles dropping after support loss
+    this.floaters = [];               // floating score reward text (world space)
+    this.rings = [];                  // expanding pop rings (world space)
+    this.kickAmp = 0;                 // board reaction amplitude (world units)
+    this.kickT = 1;                   // seconds since the kick started
     this.recoil = 0;                  // seconds remaining
     this.badgePulse = 0;
     this.debug = null;                // set by debug overlay module
+    // Reduced-motion users get pops without camera movement or flying text;
+    // the matchMedia listener keeps the flag live if the OS setting flips.
+    this.reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof matchMedia === 'function') {
+      try {
+        const mq = matchMedia('(prefers-reduced-motion: reduce)');
+        const onChange = () => { this.reducedMotion = mq.matches; };
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else mq.addListener(onChange);
+      } catch { /* best effort */ }
+    }
   }
 
   bumpRecoil() { this.recoil = 0.14; }
 
-  spawnPopBurst(cells, color) {
+  // Small, brief board reaction for successful shots. strength ~1 = normal
+  // answer pop, ~2 = heavily-bonused clear. Never obscures text: the offset
+  // is capped well under a bubble radius and decays in ~0.35 s.
+  kick(strength = 1) {
+    if (this.reducedMotion) return;
+    this.kickAmp = Math.min(2.2, strength) * 0.055;
+    this.kickT = 0;
+  }
+
+  spawnPopBurst(cells, color, { size = cells.length } = {}) {
+    const perCell = this.reducedMotion ? 3 : Math.min(16, 7 + 2 * size);
     for (const p of cells) {
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < perCell; i++) {
         const a = Math.random() * Math.PI * 2;
         const sp = 2 + Math.random() * 4;
         this.particles.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5, life: 0.55, t: 0, color });
       }
     }
+    if (!this.reducedMotion) {
+      for (const p of cells) {
+        this.rings.push({ x: p.x, y: p.y, t: 0, life: 0.32, color });
+      }
+      if (this.rings.length > 60) this.rings.splice(0, this.rings.length - 60);
+    }
     if (this.particles.length > 260) this.particles.splice(0, this.particles.length - 260);
+  }
+
+  // Floating reward text ("+140", "First try +40") anchored at a pop.
+  spawnFloater(at, lines, color = '#ffe27a') {
+    if (this.reducedMotion || !at || !lines.length) return;
+    this.floaters.push({ x: at.x, y: at.y, lines, color, t: 0, life: 0.95 });
+    if (this.floaters.length > 8) this.floaters.shift();
   }
 
   // Bubbles that lost support: spawned by game.js after an atomic grid
@@ -46,6 +84,10 @@ export class Renderer {
   clearTransient() {
     this.fallers.length = 0;
     this.particles.length = 0;
+    this.floaters.length = 0;
+    this.rings.length = 0;
+    this.kickAmp = 0;
+    this.kickT = 1;
   }
 
   bubbleSprite(color, px) {
@@ -129,7 +171,15 @@ export class Renderer {
     const v = world.view;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(v.dpr * v.scale, 0, 0, v.dpr * v.scale, v.ox * v.dpr, v.oy * v.dpr);
+
+    // Brief board reaction: a damped vertical nudge, applied to the whole
+    // world transform so it never shifts DOM/HUD elements.
+    this.kickT += dt;
+    const kickPhase = this.kickT < 0.35
+      ? Math.sin(this.kickT * 34) * this.kickAmp * world.D * Math.exp(-this.kickT * 9)
+      : 0;
+
+    ctx.setTransform(v.dpr * v.scale, 0, 0, v.dpr * v.scale, v.ox * v.dpr, (v.oy + kickPhase * v.scale) * v.dpr);
 
     const px = world.D * v.scale * v.dpr; // bubble pixel size
     this.recoil = Math.max(0, this.recoil - dt);
@@ -142,6 +192,8 @@ export class Renderer {
     this.drawCannon(game, world, px);
     this.drawProjectile(game, world, px);
     this.drawParticles(world, dt);
+    this.drawRings(world, dt);
+    this.drawFloaters(world, dt);
 
     if (this.debug) this.debug.draw(ctx, game, world);
   }
@@ -307,5 +359,57 @@ export class Renderer {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+  }
+
+  // Expanding rings at each popped bubble — reads as a soft shockwave, fades
+  // in ~0.3 s and never covers text (max radius < one cell).
+  drawRings(world, dt) {
+    if (!this.rings.length) return;
+    const ctx = this.ctx;
+    for (let i = this.rings.length - 1; i >= 0; i--) {
+      const r = this.rings[i];
+      r.t += dt;
+      if (r.t >= r.life) { this.rings.splice(i, 1); continue; }
+      const k = r.t / r.life;
+      ctx.globalAlpha = (1 - k) * 0.6;
+      ctx.lineWidth = world.D * 0.07 * (1 - k) + 1;
+      ctx.strokeStyle = COLOR_HEX[r.color] || '#fff';
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, world.D * (0.3 + 0.45 * k), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Floating reward text, rising and fading. Drawn last so it stays legible;
+  // content lives in world space so it tracks the board.
+  drawFloaters(world, dt) {
+    if (!this.floaters.length) return;
+    const ctx = this.ctx;
+    const D = world.D;
+    for (let i = this.floaters.length - 1; i >= 0; i--) {
+      const f = this.floaters[i];
+      f.t += dt;
+      if (f.t >= f.life) { this.floaters.splice(i, 1); continue; }
+      const k = f.t / f.life;
+      const rise = k * D * 0.9;
+      ctx.save();
+      ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.55) / 0.45);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      f.lines.forEach((line, li) => {
+        const first = li === 0;
+        const size = D * (first ? 0.34 : 0.21);
+        ctx.font = `800 ${size}px Trebuchet MS, Verdana, sans-serif`;
+        const y = f.y - rise - (f.lines.length - 1 - li) * D * 0.26;
+        ctx.lineWidth = size * 0.22;
+        ctx.strokeStyle = 'rgba(9, 30, 58, 0.85)';
+        ctx.strokeText(line, f.x, y);
+        ctx.fillStyle = first ? f.color : '#ffffff';
+        ctx.fillText(line, f.x, y);
+      });
+      ctx.restore();
+    }
   }
 }

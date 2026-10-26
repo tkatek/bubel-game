@@ -195,11 +195,15 @@ export class Game {
 
     let built = null;
     const cfg = configFor(st.level);
+    // Density retreat: early attempts aim mid-window (full boards); if the
+    // physics gate keeps rejecting, later attempts trade density for open
+    // lanes instead of lowering the certificate.
+    const biasFor = (attempt) => (attempt < 5 ? 0.55 : attempt < 8 ? 0.3 : 0.08);
     for (let attempt = 0; attempt < BOARD_ATTEMPTS && !built; attempt++) {
       const seed = (this.qSeed + attempt * 7919) >>> 0;
       const puzzle = buildPuzzleBoard({
         cols: this.cols, level: st.level, options: letters, loadedColor: st.loadedColor, seed,
-        obstacleBudget: cfg.obstacleBudget,
+        obstacleBudget: cfg.obstacleBudget, densityBias: biasFor(attempt),
       });
       if (!puzzle) continue;
       const errs = validateBoard(this.cols, cellsOf(puzzle.clusters), {
@@ -640,7 +644,8 @@ export class Game {
       if (st.lives >= LIFE_CAP) return; // cannot help: not consumed, stays disabled
       st.lives = Math.min(LIFE_CAP, st.lives + 1);
       st.powerups.heart--;
-      this.audio.play('pop');
+      this.audio.play('heart');
+      this.ui.owlMood('happy', 900);
       this.ui.toast('Extra heart!', 'You have ' + st.lives + ' hearts now.', 1300);
     } else if (kind === 'aim') {
       st.aimBoost = true;
@@ -668,10 +673,24 @@ export class Game {
     // question boundaries (buildPuzzle), never mid-question, so rotating the
     // device neither resets the level nor corrupts an in-flight shot.
     this.world.fitStage(info.cssW, info.cssH, info.dpr);
+
+    // When the layout family changes (phone↔tablet, portrait↔landscape) the
+    // column count that suited the old geometry no longer does. Rearrange the
+    // board for the new width — but only at a safe boundary: never during an
+    // in-flight shot or while a result is resolving. buildPuzzle is
+    // deterministic from qSeed, so the same question (queue, colours, order)
+    // comes back on the new grid; a shot in flight defers to the next
+    // prepareQuestion/restoreBoard.
+    const familyKey = `${info.mode}/${info.device}`;
+    const familyChanged = this._layoutFamilyKey !== undefined && this._layoutFamilyKey !== familyKey;
+    this._layoutFamilyKey = familyKey;
+    if (familyChanged && this.state.phase === PHASE.AIMING && !this.state.shot && this.state.question) {
+      this.buildPuzzle();
+    }
+
     // Answer labels depend on the view scale (readable-size floors in CSS px),
-    // so re-fit them for the new geometry. Cluster arrangement itself only
-    // changes at question boundaries (buildPuzzle), never mid-question.
-    if (this.state.question) {
+    // so re-fit them for the new geometry (buildPuzzle already did its own).
+    if (this.state.question && this.world) {
       this.world.labels = computeLabelLayouts(this.world, this.answerTextById(), info.dpr).layouts;
     }
     // Overlay hints for CSS (Next card sits right of the cannon).

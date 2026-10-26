@@ -84,6 +84,10 @@
               <div class="bpe-combo-track"><div class="bpe-combo-fill" id="comboFill"></div></div>
             </div>
           </div>
+          <div class="bpe-status-block">
+            <div class="bpe-status-head"><span class="bpe-status-label">Shots</span></div>
+            <div class="bpe-status-quest" id="shotsVal">0</div>
+          </div>
         </div>
       </div>
     </aside>
@@ -136,6 +140,7 @@
       <div class="bpe-m-q-sub">
         <span class="bpe-m-q-stat"><b>Question</b><span id="progTextM">1 / 4</span></span>
         <span class="bpe-m-q-stat" id="timerValM">0:00</span>
+        <span class="bpe-m-q-stat" id="shotsValM">Shots 0</span>
         <span class="bpe-m-q-stat bpe-m-combo" id="comboValM">×1</span>
       </div>
       <div class="bpe-qbar bpe-qbar-m"><div class="bpe-qbar-fill" id="qBarM"></div></div>
@@ -246,7 +251,8 @@
           <li><img src="assets/hd/heart.png" alt=""><div><b>Match the colour</b>: your shot must join <b>3 same-colour bubbles</b> on the correct answer. Wrong shots cost a heart.</div></li>
           <li><img src="assets/hd/bubble-blue.png" alt=""><div><b>Coloured obstacles</b> are not answers. Pop a group of 3+ of their colour to clear them for bonus points — or aim around them. They fall when they lose their support!</div></li>
           <li><img src="assets/icons/powerup-rainbow.svg" alt=""><div><b>Watch the cannon</b>: the loaded bubble and the <b>Next</b> preview show your upcoming colours. The queue always holds a colour that can win.</div></li>
-          <li><img src="assets/icons/icon-star-full.svg" alt=""><div><b>Score and combos.</b> Four correct answers finish the level. No mistakes = 3 stars!</div></li>
+          <li><img src="assets/icons/icon-star-full.svg" alt=""><div><b>Score and combos.</b> Consecutive correct answers grow your multiplier, first-try answers and wall-bounce <b>bank shots</b> pay bonus points, and four shots for four answers earns a perfect-clear bonus. No mistakes = 3 stars!</div></li>
+          <li><img src="assets/hd/target.png" alt=""><div><b>Power-ups</b>: the rainbow bubble matches whatever it touches, the heart restores one life, and the eagle eye shows a longer aiming guide with the predicted landing spot.</div></li>
         </ol>
         <div class="bpe-dialog-actions">
           <button class="bpe-btn bpe-btn-primary" id="btnHowToBack" type="button"><span>Got it!</span></button>
@@ -269,12 +275,17 @@
     <section class="bpe-screen" id="screen-complete" hidden aria-label="Level complete">
       <div class="bpe-dialog bpe-dialog-celebrate">
         <div class="bpe-dialog-head"><h2 id="completeTitle">Level Complete!</h2><div class="bpe-dialog-sub" id="completeSub"></div></div>
+        <img class="bpe-trophy" id="completeTrophy" src="assets/hd/trophy.png" alt="" hidden draggable="false">
         <div class="bpe-stars" id="completeStars" aria-label="Stars earned"></div>
+        <div class="bpe-complete-badge" id="completeBadge" hidden></div>
         <div class="bpe-results">
           <div class="bpe-result"><span>Score</span><b id="resScore">0</b></div>
           <div class="bpe-result"><span>Questions</span><b id="resQuestions">4 / 4</b></div>
           <div class="bpe-result"><span>Mistakes</span><b id="resMistakes">0</b></div>
           <div class="bpe-result"><span>Time</span><b id="resTime">0:00</b></div>
+          <div class="bpe-result"><span>Shots</span><b id="resShots">0</b></div>
+          <div class="bpe-result"><span>Efficiency</span><b id="resEff">100%</b></div>
+          <div class="bpe-result bpe-result-wide"><span>Best</span><b id="resBest">0</b></div>
         </div>
         <div class="bpe-dialog-actions">
           <button class="bpe-btn bpe-btn-primary" id="btnNextLevel" type="button"><img src="assets/icons/icon-play.svg" alt=""><span>Next Level</span></button>

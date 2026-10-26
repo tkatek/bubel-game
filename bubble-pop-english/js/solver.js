@@ -131,13 +131,14 @@ export function checkBoardSolvable({ cols, clusters, loadedColor, correctOption,
   if (!direct[correctOption]) reasons.push(`correct option ${correctOption} not directly poppable`);
 
   // 2. Clearing any single neutral group must keep the correct answer
-  //    winnable (the shot that opens the board must never close it).
+  //    winnable (the shot that opens the board must never close it). Same
+  //    1.5° fan as the initial survey so the certificate is consistent.
   const neutralGroups = sim.board.neutralGroups().filter((g) => g.cells.length >= 3);
   for (const g of neutralGroups) {
     const probe = sim.withBoard(sim.board.clone());
     for (const [r, c] of g.cells) probe.board.remove(r, c);
     probe.board.dropUnsupported();
-    const after = surveyDirectShots(probe, loadedColor, 3);
+    const after = surveyDirectShots(probe, loadedColor);
     if (!after[correctOption]) reasons.push(`clearing neutral group ${g.color}@${g.cells[0]} kills the winning shot`);
   }
 

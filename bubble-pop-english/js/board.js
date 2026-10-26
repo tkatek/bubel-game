@@ -232,16 +232,22 @@ export function validateClusters(cols, clusters) {
 // A curated fallback family (TEMPLATES above) is used when the procedural
 // pass cannot place four clusters.
 
+// Cluster shapes with guaranteed pop notches. A landed bubble pops a cluster
+// only when it settles in a cell touching two of the cluster's bubbles (a
+// groove), so every kept shape must have at least one groove reachable from
+// open field:
+//   strip  [[0,0],[0,1],[0,2]] — two grooves below (+ two above when r ≥ 1)
+//   roof   [[0,0],[1,0],[1,1]] — groove straight below ([2,0]) + right ([0,1])
+// (Pure triangles like [[0,0],[0,1],[1,0]] have a single oblique groove and
+// get sealed by neutral fields — measured 0 winning angles in the harness.)
 const SHAPES = [
-  [[0, 0], [0, 1], [1, 0]],
-  [[0, 0], [0, 1], [1, 1]],
   [[0, 0], [0, 1], [0, 2]],
-  [[0, 0], [1, -1], [1, 0]],
+  [[0, 0], [1, 0], [1, 1]],
 ];
 
-// Anchor rows a cluster may start at: 0 = ceiling row, 2/3 = hanging mid
+// Anchor rows a cluster may start at: 0 = ceiling row, 2/3/4 = hanging mid
 // board (answer bubbles are support anchors, so these are stable).
-const ANCHOR_ROWS = [0, 0, 2, 3];
+const ANCHOR_ROWS = [0, 0, 2, 3, 4];
 
 function clusterSlots(cols) {
   const slots = [];
@@ -308,26 +314,26 @@ export function pickClusterLayout(cols, rng) {
   return base.map((cells) => cells.map(m));
 }
 
-// Density targets per difficulty tier (total bubbles on the board).
-export function densityTargets(level, cols) {
-  const tier = level <= 5 ? 0 : level <= 10 ? 1 : 2;
-  const desktop = [[20, 28], [28, 38], [35, 46]][tier];
-  const narrow = { 8: [18, 30], 9: [22, 34], 10: [24, 40] };
-  const range = narrow[cols] || desktop;
-  // phone boards never exceed the desktop tier maximum
-  const lo = tier === 0 ? range[0] : Math.max(range[0], desktop[0] - 4);
-  const hi = Math.min(range[1], desktop[1]);
-  return { lo, hi, tier };
+// Density window per level, derived from the LEVEL_CONFIG obstacle budget:
+// budget 0 → an open 12-cell board (Levels 1–2 teach on an open frame), and
+// each budgeted neutral cell adds to the designed density. `slack` leaves
+// room for the last placed group overshooting its target size; narrow boards
+// get a touch more because growth stalls differently there.
+export function densityTargets(level, cols, obstacleBudget = 0) {
+  const budget = Math.max(0, Math.min(14, obstacleBudget | 0));
+  const slack = cols <= 9 ? 5 : 4;
+  return { lo: 12, hi: 12 + budget + slack, tier: level <= 5 ? 0 : level <= 10 ? 1 : 2 };
 }
 
 // Build a full puzzle board: four answer clusters in `loadedColor` plus a
 // neutral obstacle field in the other three colours. Deterministic in
 // (cols, level, options order, loadedColor, seed). `obstacleBudget`
-// (LEVEL_CONFIG) is a floor on neutral cells — density windows from the
-// task targets stay authoritative. Returns null when a reasonable board
-// cannot be built for this seed (caller reseeds / falls back to the curated
-// layout family).
-export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obstacleBudget = 0 }) {
+// (LEVEL_CONFIG) is the designed neutral-cell count: 0 keeps early levels
+// open, higher tiers grow the puzzle field. `densityBias` 0..1 lets callers
+// retreat toward open boards on retries (0.5 ≈ half budget). Returns null
+// when a reasonable board cannot be built for this seed (caller reseeds /
+// falls back to the curated layout family).
+export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obstacleBudget = 0, densityBias = 1 }) {
   if (options.length !== 4) return null;
   const rng = mulberry32(seed);
   const neutralColors = BUBBLE_COLORS.filter((c) => c !== loadedColor);
@@ -341,9 +347,9 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
   }
 
   const board = new HexBoard(cols, clusters);
-  const { lo, hi } = densityTargets(level, cols);
-  const maxNeutral = Math.max(0, hi - 12);
-  const wantNeutral = Math.min(maxNeutral, Math.max(Math.round((lo + Math.min(hi, lo + 8)) / 2) - 12, Math.min(obstacleBudget, maxNeutral)));
+  const budget = Math.max(0, Math.min(14, obstacleBudget | 0));
+  const { lo, hi } = densityTargets(level, cols, budget);
+  const wantNeutral = Math.round(budget * (0.5 + 0.5 * Math.min(1, Math.max(0, densityBias))));
 
   // Cluster-adjacency limit: a placed neutral may touch at most one cluster,
   // so popping it can never expose a cell that bridges two answers.
@@ -356,6 +362,23 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
     return n;
   };
 
+  // Landing reserve: a candidate group is only accepted if every answer
+  // cluster keeps ≥3 empty neighbour cells afterwards, so a loaded shot can
+  // always find a landing notch on every answer (the physics gate in
+  // solver.js re-verifies with real trajectories).
+  const keepsLanding = () => {
+    for (const cl of clusters) {
+      let free = 0;
+      for (const [cr, cc] of cl.cells) {
+        for (const [nr, nc] of board.neighbors(cr, cc)) {
+          if (!board.has(nr, nc)) free++;
+        }
+      }
+      if (free < 3) return false;
+    }
+    return true;
+  };
+
   const placed = [];
   let placedCells = 0;
   let guard = 0;
@@ -364,15 +387,22 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
     const size = 3 + Math.floor(rng() * 3); // 3–5: matchable with one shot
     const bias = rng();                     // 0 = pillar-ish, 1 = bank/row-ish
     // Seeds: free cells hanging from anchors or already-placed neutrals.
-    const seeds = [];
+    // Cells touching a cluster (its ring) come last: groups grown from the
+    // ring cap the cluster's landing notches and seal the answer away, so
+    // open-field growth is preferred and the physics gate keeps the final
+    // say. Notch cells (touching 2+ cluster cells) are always excluded.
+    const freeCells = [];
     for (let r = 0; r <= MAX_ROW; r++) {
       for (let c = 0; c < board.colSpan(r); c++) {
         if (board.has(r, c) || clusterTouchLimit(r, c) > 1) continue;
         const supported = r === 0 || board.neighbors(r, c).some(([nr, nc]) => board.has(nr, nc));
-        if (supported) seeds.push([r, c]);
+        if (supported) freeCells.push([r, c]);
       }
     }
-    if (!seeds.length) break;
+    if (!freeCells.length) break;
+    const isRing = (rc) => clusterTouchLimit(rc[0], rc[1]) === 1;
+    const openSeeds = freeCells.filter((rc) => !isRing(rc));
+    const seeds = openSeeds.length ? openSeeds : freeCells;
     for (let tries = 0; tries < 24; tries++) {
       const group = [];
       const start = seeds[Math.floor(rng() * seeds.length)];
@@ -393,10 +423,10 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
         group.push(cur);
       }
       if (!ok || group.length < 3) continue;
-      // support check on the real board
+      // support + landing checks on the real board
       for (const [r, c] of group) board.set(r, c, { color, option: null });
       const unsupported = board.unsupported().filter((u) => group.some(([gr, gc]) => gr === u.r && gc === u.c));
-      if (unsupported.length) {
+      if (unsupported.length || !keepsLanding()) {
         for (const [r, c] of group) board.remove(r, c);
         continue;
       }

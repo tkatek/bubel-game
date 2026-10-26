@@ -47,6 +47,8 @@ export class GameState {
     this.combo = 0;                 // consecutive correct answers
     this.mistakes = 0;              // drives stars (0→3★, 1→2★, ≥2→1★)
     this.activeTime = 0;            // elapsed seconds while the learner can act
+    this.shotsLevel = 0;            // total shots this level (efficiency stat)
+    this.shotsQuestion = 0;         // shots since the current question started
     this.question = null;           // full question object from questions.js: { id, level, cefr, type, prompt, context?, options, correct, explain }
     this.optionsOrder = [];         // shuffled option objects
     this.loadedColor = 'blue';      // colour in the cannon (queue head)
@@ -79,6 +81,8 @@ export class GameState {
     this.combo = 0;
     this.mistakes = 0;
     this.activeTime = 0;
+    this.shotsLevel = 0;
+    this.shotsQuestion = 0;
     this.shot = null;
     this.rainbowArmed = false;
     this.aimBoost = false;

@@ -10,12 +10,24 @@
   --bpe-pad: 14px;
 }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-text { font-size: 19px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-body .bpe-q-type { font-size: 10.5px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-body .bpe-q-context { font-size: 15px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-opts .bpe-q-opt { font-size: 15.5px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-sub { font-size: 14.5px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-badge { font-size: 15px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-score { font-size: 15px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-score img { width: 19px; height: 19px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-hearts-m img { width: 28px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-top { min-height: 52px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-pause { width: 52px; height: 52px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-pu { width: 54px; height: 54px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-next { width: 60px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-question { padding: 10px 16px 12px; border-radius: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-q-book { width: 36px; }
+/* room to spare: show the whole power-up row instead of the popover trigger */
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-m-pu-row { display: flex; gap: 10px; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] #btnPuDock { display: none; }
+#bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-pu-dock { width: 52px; height: 52px; }
 #bpe-root[data-mode="tablet"][data-orient="portrait"] .bpe-level-grid { grid-template-columns: repeat(5, 1fr); gap: 12px; }
 
 /* ---- short landscape (compact desktop composition) ---- */

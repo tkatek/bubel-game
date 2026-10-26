@@ -11,7 +11,7 @@ import {
 import { makeWorld, stepProjectile, resolveLanding, sweepShot, auditReachability } from './world.js';
 import { checkBoardSolvable } from './solver.js';
 import { computeLabelLayouts } from './labels.js';
-import { configFor } from './levels.js';
+import { configFor, SCORE, efficiencyPct } from './levels.js';
 import { GameState, PHASE, LIFE_CAP } from './state.js';
 import { mulberry32, nextId, clamp } from './util.js';
 import { loadSave, persist, MAX_LEVELS } from './storage.js';
@@ -27,6 +27,14 @@ const BOARD_ATTEMPTS = 10;        // generation candidates before the fallback
 
 function cellsOf(clusters) {
   return clusters.flatMap((cl) => cl.cells.map(([r, c]) => ({ r, c, color: cl.color, option: cl.option ?? null })));
+}
+
+// Mean of world-space points — pop FX and floating scores anchor here.
+function centroidOf(points) {
+  if (!points.length) return { x: 0, y: 0 };
+  let x = 0, y = 0;
+  for (const p of points) { x += p.x; y += p.y; }
+  return { x: x / points.length, y: y / points.length };
 }
 
 export class Game {
@@ -154,6 +162,7 @@ export class Game {
     st.loadedColor = BUBBLE_COLORS[Math.floor(rng() * 4)];
     st.rainbowArmed = false;
     st.aimBoost = false;
+    st.shotsQuestion = 0;         // per-question efficiency tracking
     this.clearedToastShown = false;
     this.questionLoadedColor = st.loadedColor; // restoreBoard rewinds to this
 
@@ -271,11 +280,15 @@ export class Game {
       pos: { x: this.world.muzzle.x, y: this.world.muzzle.y },
       dir: { x: aim.x, y: aim.y },
       trail: [],
+      bounces: 0,                 // wall reflections — bank-shot bonus stat
       token: st.runToken,
     };
+    st.shotsLevel++;
+    st.shotsQuestion++;
     this.aim = null;
     st.go(PHASE.PROJECTILE_FLYING);
     this.renderer.bumpRecoil();
+    this.ui.renderHud(st);       // shots counter + rainbow consumption
     this.audio.play('fire');
   }
 
@@ -311,6 +324,8 @@ export class Game {
     // Engine-recoverable failures: never charge the learner
     if (!landing.ok) {
       console.warn('BPE: shot could not resolve (' + landing.reason + ') — recovered without penalty');
+      st.shotsLevel = Math.max(0, st.shotsLevel - 1);
+      st.shotsQuestion = Math.max(0, st.shotsQuestion - 1);
       st.shot = null;
       st.go(PHASE.AIMING);
       this.ui.toast('Fizzle…', 'That shot slipped — no heart lost, try again!', 1200);
@@ -335,15 +350,20 @@ export class Game {
         // clean cluster pop → this shot chose an answer
         const chosen = [...opts][0];
         const centers = group.map(([gr, gc]) => this.world.board.cellCenter(gr, gc, this.world.D));
+        const at = centroidOf(centers);
         for (const [gr, gc] of group) this.world.board.remove(gr, gc);
         // grid is now final; anything left unsupported falls
         const falls = this.world.board.dropUnsupported();
-        this.renderer.spawnPopBurst(centers, landColor);
+        this.renderer.spawnPopBurst(centers, landColor, { size: group.length });
         this.spawnFallers(falls);
-        this.pendingOutcome = { kind: 'popped', option: chosen, falls: falls.length };
+        this.pendingOutcome = {
+          kind: 'popped', option: chosen, falls: falls.length,
+          bounces: st.shot ? (st.shot.bounces || 0) : 0,
+          shotsUsed: st.shotsQuestion, at,
+        };
         st.go(PHASE.RESOLVING);
         this.resolveT = RESOLVE_POP;
-        this.audio.play('pop');
+        this.audio.play('pop', { combo: st.combo, big: group.length > 4 });
         return;
       }
       if (opts.size > 1) {
@@ -358,14 +378,15 @@ export class Game {
       }
       // pure neutral match → obstacle cleared, the same question continues
       const centers = group.map(([gr, gc]) => this.world.board.cellCenter(gr, gc, this.world.D));
+      const at = centroidOf(centers);
       for (const [gr, gc] of group) this.world.board.remove(gr, gc);
       const falls = this.world.board.dropUnsupported();
-      this.renderer.spawnPopBurst(centers, landColor);
+      this.renderer.spawnPopBurst(centers, landColor, { size: group.length });
       this.spawnFallers(falls);
-      this.pendingOutcome = { kind: 'cleared', popped: group.length, falls: falls.length };
+      this.pendingOutcome = { kind: 'cleared', popped: group.length, falls: falls.length, at };
       st.go(PHASE.RESOLVING);
       this.resolveT = RESOLVE_POP;
-      this.audio.play('pop');
+      this.audio.play('clear');
       return;
     }
 
@@ -407,11 +428,12 @@ export class Game {
 
     if (out.kind === 'cleared') {
       // neutral group popped: puzzle bonus, same question continues — never
-      // treated as a wrong English answer
+      // treated as a wrong English answer, never touches the combo
       const gain = CLEAR_BONUS + FALL_BONUS * out.falls + 5 * Math.max(0, out.popped - 3);
       st.score += gain;
       st.go(PHASE.AIMING);
-      this.audio.play('pop');
+      this.audio.play('bonus');
+      this.renderer.spawnFloater(out.at, [`+${gain}`], '#9fe3ff');
       this.ui.toast(
         this.clearedToastShown ? `Cleared! +${gain}` : 'Obstacle cleared!',
         this.clearedToastShown
@@ -426,8 +448,16 @@ export class Game {
     if (out.kind === 'popped') {
       const correct = out.option === st.question.correct;
       if (correct) {
-        const gain = 100 + 25 * st.combo;
-        st.score += gain;
+        // Base + combo stay on the documented formula; the efficiency and
+        // bank-shot bonuses are deterministic functions of the resolved shot.
+        const gain = SCORE.answerBase + SCORE.comboStep * st.combo;
+        const tags = [];
+        let bonus = 0;
+        if (out.shotsUsed === 1) { bonus += SCORE.firstTry; tags.push(`First try +${SCORE.firstTry}`); }
+        else if (out.shotsUsed === 2) { bonus += SCORE.efficientTwo; tags.push(`Sharp +${SCORE.efficientTwo}`); }
+        else if (out.shotsUsed === 3) { bonus += SCORE.efficientThree; tags.push(`Efficient +${SCORE.efficientThree}`); }
+        if (out.bounces >= 1) { bonus += SCORE.bankShot; tags.push(`Bank shot +${SCORE.bankShot}`); }
+        st.score += gain + bonus;
         st.combo++;
         st.qIndex++;
         st.go(PHASE.FEEDBACK);
@@ -436,10 +466,13 @@ export class Game {
         // capped so the arcade flow never stalls.
         const explainMs = 2100 + Math.min(1500, Math.round(st.question.explain.length * 9));
         this.feedbackT = Math.max(FEEDBACK_CORRECT, explainMs / 1000);
-        this.feedbackKind = { correct: true, gain, explain: st.question.explain };
-        this.audio.play('correct');
+        this.feedbackKind = { correct: true, gain: gain + bonus, explain: st.question.explain };
+        this.audio.play('correct', { combo: st.combo });
+        this.renderer.spawnFloater(out.at, [`+${gain + bonus}`, ...tags], '#ffe27a');
+        this.renderer.kick(1 + 0.35 * Math.min(3, tags.length));
+        this.ui.owlMood('happy');
         this.ui.renderHud(st);
-        this.ui.toast(`Correct! +${gain}`, st.question.explain, explainMs);
+        this.ui.toast(`Correct! +${gain + bonus}`, st.question.explain, explainMs);
         return;
       }
       // wrong answer: one heart, retry the same question — coach with a
@@ -452,6 +485,8 @@ export class Game {
       this.feedbackT = FEEDBACK_WRONG;
       this.feedbackKind = { correct: false, wrong: true };
       this.audio.play('wrong');
+      this.renderer.kick(0.8);
+      this.ui.owlMood('oops');
       this.ui.renderHud(st);
       const info = QUESTION_TYPES[st.question.type];
       const nudge = (info && info.nudge) || 'Read the question again carefully.';
@@ -467,6 +502,8 @@ export class Game {
     this.feedbackT = FEEDBACK_WRONG;
     this.feedbackKind = { correct: false, miss: true };
     this.audio.play('miss');
+    this.renderer.kick(0.8);
+    this.ui.owlMood('oops');
     this.ui.renderHud(st);
     this.ui.toast('Missed!', 'Your bubble didn\'t join a group of three — one heart lost.', 1800);
   }
@@ -493,25 +530,47 @@ export class Game {
   levelComplete() {
     const st = this.state;
     st.go(PHASE.LEVEL_COMPLETE);
+
+    // Perfect clear: one shot per question for the whole level (deterministic
+    // — evaluated from the resolved shot counters before any saving).
+    const perfect = st.shotsLevel <= 4;
+    if (perfect) st.score += SCORE.perfectLevel;
+
     const stars = st.mistakes === 0 ? 3 : st.mistakes === 1 ? 2 : 1;
+    // Best-of merge: a worse later run must never erase a better score, more
+    // stars, a faster time or a leaner shot count.
     const prev = this.save.best[st.level];
-    if (!prev || st.score > prev.score) {
-      this.save.best[st.level] = { score: st.score, stars, time: Math.round(st.activeTime) };
-    }
+    const entry = {
+      score: Math.max(st.score, prev ? prev.score : 0),
+      stars: Math.max(stars, prev ? prev.stars : 0),
+      time: Math.min(Math.round(st.activeTime), prev ? prev.time : Infinity),
+      shots: Math.min(st.shotsLevel, prev && Number.isFinite(prev.shots) ? prev.shots : Infinity),
+    };
+    entry.time = Number.isFinite(entry.time) ? entry.time : 0;
+    entry.shots = Number.isFinite(entry.shots) ? entry.shots : st.shotsLevel;
+    this.save.best[st.level] = entry;
     if (st.level < MAX_LEVELS) this.save.unlocked = Math.max(this.save.unlocked, st.level + 1);
     persist(this.save);
     this.ui.buildLevelGrid(this.save, (lv) => this.startLevel(lv));
-    this.ui.showResults({ score: st.score, mistakes: st.mistakes, time: st.activeTime, stars, level: st.level });
+    const lvMeta = LEVELS[st.level - 1];
+    this.ui.showResults({
+      score: st.score, mistakes: st.mistakes, time: st.activeTime, stars, level: st.level,
+      shots: st.shotsLevel, efficiency: efficiencyPct(st.shotsLevel),
+      best: entry, perfect,
+      title: lvMeta.title, cefr: lvMeta.cefr,
+      totalStars: Object.values(this.save.best).reduce((s, b) => s + (b.stars || 0), 0),
+    });
     this.ui.screen('complete');
     this.ui.showGameChrome(false);
-    this.audio.play('levelup');
+    this.ui.owlMood('happy', 1600);
+    this.audio.play('levelup', { stars });
   }
 
   gameOver() {
     const st = this.state;
     st.go(PHASE.GAME_OVER);
-    this.ui.gameoverSub.textContent = `Level ${st.level} — Question ${Math.min(st.qIndex + 1, 4)} of 4`;
-    this.ui.goTip.textContent = 'Tip: each answer sits on a bubble group — pop the group whose label answers the question!';
+    this.ui.el.gameoverSub.textContent = `Level ${st.level} — Question ${Math.min(st.qIndex + 1, 4)} of 4`;
+    this.ui.el.goTip.textContent = 'Tip: each answer sits on a bubble group — pop the group whose label answers the question!';
     this.ui.screen('gameover');
     this.ui.showGameChrome(false);
     this.audio.play('gameover');
@@ -520,7 +579,7 @@ export class Game {
   // ---- pause ---------------------------------------------------------------
   pause(reason = 'user') {
     if (!this.state.pause()) return false;
-    this.ui.pauseInfo.textContent = `Level ${this.state.level} · Question ${Math.min(this.state.qIndex + 1, 4)}/4 · Score ${this.state.score}`;
+    this.ui.el.pauseInfo.textContent = `Level ${this.state.level} · Question ${Math.min(this.state.qIndex + 1, 4)}/4 · Score ${this.state.score}`;
     this.ui.screen('pause');
     this.pausedByHidden = reason === 'hidden';
     return true;

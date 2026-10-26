@@ -357,8 +357,9 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
   };
 
   const placed = [];
+  let placedCells = 0;
   let guard = 0;
-  while (placed.length < wantNeutral && guard++ < 80) {
+  while (placedCells < wantNeutral && guard++ < 80) {
     const color = neutralColors[placed.length % 3 === 0 ? Math.floor(rng() * 3) : (guard + placed.length) % 3];
     const size = 3 + Math.floor(rng() * 3); // 3–5: matchable with one shot
     const bias = rng();                     // 0 = pillar-ish, 1 = bank/row-ish
@@ -400,6 +401,7 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
         continue;
       }
       placed.push({ color, cells: group });
+      placedCells += group.length;
       break;
     }
   }

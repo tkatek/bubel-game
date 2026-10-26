@@ -97,6 +97,7 @@ export function sweepShot(world, from, dir, maxDist) {
   let pos = { x: from.x, y: from.y };
   let v = { x: dir.x, y: dir.y };
   let remaining = maxDist;
+  let bounces = 0;                 // wall reflections seen along the way
   const path = [pos];
   for (let hop = 0; hop < 12 && remaining > 1e-6; hop++) {
     let tEvent = Infinity;
@@ -122,8 +123,8 @@ export function sweepShot(world, from, dir, maxDist) {
     if (kind && tEvent <= remaining) {
       pos = { x: pos.x + v.x * travel, y: pos.y + v.y * travel };
       path.push({ ...pos });
-      if (kind === 'wallL' || kind === 'wallR') { v = { x: -v.x, y: v.y }; continue; }
-      const end = { type: kind, point: { ...pos }, path };
+      if (kind === 'wallL' || kind === 'wallR') { bounces++; v = { x: -v.x, y: v.y }; continue; }
+      const end = { type: kind, point: { ...pos }, path, bounces };
       if (kind === 'bubble') { end.hitCell = { r: hit.r, c: hit.c }; }
       return end;
     }
@@ -131,7 +132,7 @@ export function sweepShot(world, from, dir, maxDist) {
     path.push({ ...pos });
     remaining -= travel;
   }
-  return { type: 'exhausted', point: { ...pos }, path };
+  return { type: 'exhausted', point: { ...pos }, path, bounces };
 }
 
 // Resolve where a finished shot lands on the grid. Returns
@@ -159,6 +160,7 @@ export function stepProjectile(world, shot, dt) {
     const ev = sweepShot(world, shot.pos, shot.dir, step);
     shot.trail.push({ ...shot.pos });
     if (shot.trail.length > 24) shot.trail.shift();
+    if (ev.bounces) shot.bounces = (shot.bounces || 0) + ev.bounces; // bank-shot stat
     if (ev.type === 'exhausted') {
       shot.pos = ev.point;
       continue;

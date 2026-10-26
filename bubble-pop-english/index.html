@@ -39,16 +39,18 @@
       </div>
 
       <div class="bpe-scorezone">
-        <div class="bpe-scorebox">
-          <img class="bpe-panel-art" src="assets/images/optimized/score-container.png" alt="" draggable="false">
-          <div class="bpe-scorebox-content">
-            <div class="bpe-score-label">Score</div>
-            <div class="bpe-score-value" id="scoreVal">0</div>
+        <div class="bpe-pills">
+          <div class="bpe-pill">
+            <img class="bpe-pill-ico" src="assets/hd/star.png" alt="" draggable="false">
+            <div class="bpe-pill-text"><span class="bpe-pill-label">Score</span><span class="bpe-pill-value" id="scoreVal">0</span></div>
+          </div>
+          <div class="bpe-pill">
+            <img class="bpe-pill-ico" src="assets/hd/clock.png" alt="" draggable="false">
+            <div class="bpe-pill-text"><span class="bpe-pill-label">Time</span><span class="bpe-pill-value" id="timerVal">00:00</span></div>
           </div>
         </div>
         <button class="bpe-settings" id="btnPauseDesktop" type="button" aria-label="Pause and settings">
-          <img class="bpe-panel-art" src="assets/images/optimized/settings-button.png" alt="" draggable="false">
-          <img class="bpe-settings-icon" src="assets/icons/icon-pause.svg" alt="">
+          <img class="bpe-panel-art" src="assets/hd/pause.png" alt="" draggable="false">
         </button>
       </div>
     </header>
@@ -65,9 +67,7 @@
         <div class="bpe-status-block">
           <div class="bpe-status-label">Question</div>
           <div class="bpe-status-quest" id="progText">1 / 4</div>
-          <div class="bpe-segs" id="progSegs" role="img" aria-label="Question progress">
-            <span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span>
-          </div>
+          <div class="bpe-qbar"><div class="bpe-qbar-fill" id="qBar"></div></div>
         </div>
         <div class="bpe-status-block">
           <div class="bpe-status-label">Lives</div>
@@ -79,10 +79,6 @@
             <div class="bpe-combo-val" id="comboVal">×1</div>
             <div class="bpe-combo-track"><div class="bpe-combo-fill" id="comboFill"></div></div>
           </div>
-        </div>
-        <div class="bpe-status-block">
-          <div class="bpe-status-label">Time</div>
-          <div class="bpe-timer" id="timerVal">0:00</div>
         </div>
       </div>
     </aside>
@@ -117,7 +113,7 @@
     <div class="bpe-m-top" id="mTop">
       <div class="bpe-m-badge"><span class="bpe-m-badge-lv" id="levelNumM">Lv 1</span><span class="bpe-m-badge-cefr" id="levelCefrM">A1</span></div>
       <div class="bpe-hearts bpe-hearts-m" id="heartsM" aria-live="polite"></div>
-      <button class="bpe-m-pause" id="btnPauseMobile" type="button" aria-label="Pause"><img src="assets/icons/icon-pause.svg" alt=""></button>
+      <button class="bpe-m-pause" id="btnPauseMobile" type="button" aria-label="Pause"><img src="assets/hd/pause.png" alt=""></button>
     </div>
 
     <div class="bpe-m-question" id="mQuestion">
@@ -132,9 +128,7 @@
         <span class="bpe-m-q-stat" id="timerValM">0:00</span>
         <span class="bpe-m-q-stat bpe-m-combo" id="comboValM">×1</span>
       </div>
-      <div class="bpe-segs bpe-segs-m" id="progSegsM" role="img" aria-label="Question progress">
-        <span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span><span class="bpe-seg"></span>
-      </div>
+      <div class="bpe-qbar bpe-qbar-m"><div class="bpe-qbar-fill" id="qBarM"></div></div>
     </div>
 
     <div class="bpe-m-dock" id="mDock">
@@ -143,17 +137,15 @@
       </button>
       <div class="bpe-m-color" id="mColorChip"><span class="bpe-q-color-dot"></span><span id="mColorName">Blue</span></div>
       <div class="bpe-next" id="nextWrapM" aria-label="Next bubble">
-        <div class="bpe-next-bubble" id="nextBubbleM"></div>
-        <img class="bpe-panel-art" src="assets/images/optimized/next-bubble-frame.png" alt="" draggable="false">
         <span class="bpe-next-label">Next</span>
+        <div class="bpe-next-bubble" id="nextBubbleM"></div>
       </div>
     </div>
 
-    <!-- Desktop next-bubble preview (positioned over the stage by layout.js) -->
+    <!-- Desktop next-bubble preview (positioned over the stage by CSS) -->
     <div class="bpe-next" id="nextWrap" aria-label="Next bubble">
-      <div class="bpe-next-bubble" id="nextBubble"></div>
-      <img class="bpe-panel-art" src="assets/images/optimized/next-bubble-frame.png" alt="" draggable="false">
       <span class="bpe-next-label">Next</span>
+      <div class="bpe-next-bubble" id="nextBubble"></div>
     </div>
 
   </div>

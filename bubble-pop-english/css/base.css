@@ -144,35 +144,50 @@
   box-shadow: 0 1px 2px rgba(20, 12, 0, 0.5);
 }
 
-/* ---------- score / settings ---------- */
-.bpe-scorezone { display: flex; align-items: center; gap: 10px; }
-.bpe-scorebox { position: relative; }
-.bpe-scorebox .bpe-panel-art {
-  object-fit: none;
-  border-image-source: url('../assets/images/optimized/score-container.png');
-  border-image-slice: 84 130 84 130 fill;
-  border-image-width: 26px 40px 26px 40px;
+/* ---------- score / time pills + pause (reference header) ---------- */
+.bpe-scorezone { display: flex; align-items: center; gap: 12px; }
+.bpe-pills { display: flex; flex-direction: column; gap: 7px; }
+.bpe-pill {
+  display: flex; align-items: center; gap: 9px;
+  min-width: 168px;
+  background: linear-gradient(180deg, rgba(29, 63, 112, .95), rgba(10, 37, 67, .95));
+  border: 2px solid var(--bpe-gold-deep);
+  border-radius: 999px;
+  padding: 4px 16px 4px 7px;
+  box-shadow: var(--bpe-shadow), var(--bpe-inset-light);
 }
-.bpe-scorebox-content {
-  position: relative; z-index: 2;
-  display: flex; align-items: baseline; gap: 8px;
-  padding: 8px 22px;
-}
-.bpe-score-label { font-size: 13px; color: var(--bpe-cream); opacity: .85; }
-.bpe-score-value { font-size: 22px; font-weight: 800; color: var(--bpe-gold); text-shadow: 0 2px 2px rgba(20,12,0,.5); }
+.bpe-pill-ico { width: 30px; height: 30px; object-fit: contain; flex: 0 0 auto; }
+.bpe-pill-text { display: flex; flex-direction: column; line-height: 1.08; }
+.bpe-pill-label { font-size: 11.5px; font-weight: 800; letter-spacing: .06em; color: var(--bpe-cyan); text-transform: uppercase; }
+.bpe-pill-value { font-size: 17px; font-weight: 800; color: var(--bpe-white); font-variant-numeric: tabular-nums; }
 
 .bpe-settings {
   position: relative;
-  width: 56px; height: 56px;
+  width: 58px; height: 58px;
   border: 0; padding: 0; cursor: pointer;
   background: none;
 }
-.bpe-settings .bpe-panel-art { border-radius: 18px; }
-.bpe-settings-icon {
-  position: absolute; inset: 0; margin: auto;
-  width: 46%; height: 46%;
-}
+.bpe-settings img { width: 100%; height: 100%; object-fit: contain; }
 .bpe-settings:active { transform: scale(0.94); }
+
+/* question-bar options list: only shown for letter-badge fallback questions */
+.bpe-q-opts { display: none; }
+#bpe-root.show-opts .bpe-q-opts { display: flex; }
+
+/* ---------- question progress bar (reference style) ---------- */
+.bpe-qbar {
+  height: 12px; border-radius: 7px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.bpe-qbar-fill {
+  height: 100%; width: 0;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--bpe-gold-deep), var(--bpe-gold));
+  box-shadow: 0 0 6px rgba(255, 206, 60, 0.55);
+  transition: width .35s var(--bpe-ease-out);
+}
 
 /* ---------- status rail ---------- */
 .bpe-rail-left { position: relative; }
@@ -263,19 +278,23 @@
 }
 .bpe-pu-name { font-size: 12px; margin-top: 4px; }
 
-/* ---------- next bubble preview ---------- */
+/* ---------- next bubble preview (compact card, reference style) ---------- */
 .bpe-next {
   position: absolute; z-index: var(--bpe-z-chrome);
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: linear-gradient(180deg, rgba(29, 63, 112, .92), rgba(10, 37, 67, .92));
+  border: 2px solid rgba(255, 222, 130, .6);
+  border-radius: 14px;
+  padding: 6px 10px 8px;
+  box-shadow: var(--bpe-shadow);
 }
 .bpe-next-bubble {
-  position: absolute; inset: 14%;
+  width: 34px; height: 34px;
   border-radius: 50%;
   background: #4d96ff center/cover;
   box-shadow: inset -3px -5px 8px rgba(0, 0, 0, .3), 0 2px 4px rgba(4, 16, 34, .5);
 }
-.bpe-next > .bpe-panel-art { position: relative; inset: auto; width: 100%; height: auto; }
-.bpe-next-label { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--bpe-cyan); text-shadow: 0 1px 2px rgba(4,16,34,.8); }
+.bpe-next-label { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--bpe-cyan); }
 
 /* ---------- buttons / dialogs / screens (shared) ---------- */
 .bpe-btn {

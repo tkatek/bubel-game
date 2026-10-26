@@ -121,6 +121,7 @@ export class Game {
     if (level < 1 || level > MAX_LEVELS || level > this.save.unlocked) return;
     const token = this.state.runToken + 1;
     this.state.startRun(level);
+    this.state.powerups = { ...configFor(level).powerups }; // per-level loadout
     this.state.go(PHASE.PREPARING_QUESTION);
     this.ui.showGameChrome(true);
     this.ui.hideToast();
@@ -131,7 +132,11 @@ export class Game {
 
   colsForLayout() {
     const { mode, device } = this.layout;
-    if (mode === 'mobile') return device === 'tablet' ? 9 : 8;
+    // Portrait phones keep 8 columns: ~390 CSS px of playfield lands bubbles
+    // at ~46 px, and a 320 px phone still gets ~38 px without clipping.
+    // Tablet portrait goes to 12 columns so bubbles stay a readable ~60 px
+    // instead of stretching the narrow phone board across the wider screen.
+    if (mode === 'mobile') return device === 'tablet' ? 12 : 8;
     if (mode === 'tablet') return 9;
     return device === 'desktop' ? 11 : 10;
   }
@@ -180,10 +185,12 @@ export class Game {
     const textFor = this.answerTextById();
 
     let built = null;
+    const cfg = configFor(st.level);
     for (let attempt = 0; attempt < BOARD_ATTEMPTS && !built; attempt++) {
       const seed = (this.qSeed + attempt * 7919) >>> 0;
       const puzzle = buildPuzzleBoard({
         cols: this.cols, level: st.level, options: letters, loadedColor: st.loadedColor, seed,
+        obstacleBudget: cfg.obstacleBudget,
       });
       if (!puzzle) continue;
       const errs = validateBoard(this.cols, cellsOf(puzzle.clusters), {
@@ -194,6 +201,7 @@ export class Game {
       const gate = checkBoardSolvable({
         cols: this.cols, clusters: puzzle.clusters, loadedColor: st.loadedColor,
         correctOption: st.question.correct, queue, options: letters,
+        minAngles: cfg.minDirectAngles,
       });
       if (!gate.ok) continue;
       // Label gate: a candidate whose clusters leave no room for overlap-free
@@ -221,7 +229,7 @@ export class Game {
     this.renderer.clearTransient();
     this.world = makeWorld(this.cols, built.clusters);
     this.world.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
-    this.world.labels = computeLabelLayouts(this.world, textFor, this.layout.dpr);
+    this.world.labels = computeLabelLayouts(this.world, textFor, this.layout.dpr).layouts;
   }
 
   // Rebuild the identical board + queue (after a wrong answer / miss: the
@@ -602,7 +610,7 @@ export class Game {
     // so re-fit them for the new geometry. Cluster arrangement itself only
     // changes at question boundaries (buildPuzzle), never mid-question.
     if (this.state.question) {
-      this.world.labels = computeLabelLayouts(this.world, this.answerTextById(), info.dpr);
+      this.world.labels = computeLabelLayouts(this.world, this.answerTextById(), info.dpr).layouts;
     }
     // Overlay hints for CSS (Next card sits right of the cannon).
     const scale = this.world.view.scale;

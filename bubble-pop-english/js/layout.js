@@ -69,12 +69,14 @@ export class Layout {
   }
 
   // DOM overlays: the next-preview and owl are CSS-positioned relative to
-  // the stage; layout only decides visibility.
+  // the stage; layout only decides visibility. Phones hide the owl entirely
+  // (the menu screen has its own mascot); tablet portrait keeps it when the
+  // stage is tall enough that it cannot crowd the cannon or dock.
   placeOverlays() {
     const st = this.stage.getBoundingClientRect();
     if (this.mode === 'mobile') {
       this.nextWrap.style.display = 'none';
-      this.owl.style.display = st.height > 460 ? '' : 'none';
+      this.owl.style.display = this.device === 'tablet' && st.height > 560 ? '' : 'none';
       return;
     }
     this.nextWrap.style.display = '';

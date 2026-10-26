@@ -22,15 +22,17 @@ export function angleFan(stepDeg = 1.5) {
 }
 
 // A simulation context: world geometry + a private HexBoard copy that shots
-// mutate. The live game world is never touched.
+// mutate. The live game world is never touched. withBoard is chainable —
+// probes are themselves valid sims (surveyDirectShots calls withBoard again).
 export function makeSim(cols, clusters) {
   const world = makeWorld(cols, clusters);
-  return {
+  const make = (w, board) => ({
     cols,
-    world,
-    board: world.board,
-    withBoard(board) { return { cols, world: { ...this.world, board }, board }; },
-  };
+    world: w,
+    board,
+    withBoard(nextBoard) { return make({ ...w, board: nextBoard }, nextBoard); },
+  });
+  return make(world, world.board);
 }
 
 // Fire one simulated shot. Mutates sim.board. Returns:

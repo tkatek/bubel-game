@@ -119,6 +119,7 @@
     <div class="bpe-m-top" id="mTop">
       <div class="bpe-m-badge"><span class="bpe-m-badge-lv" id="levelNumM">Lv 1</span><span class="bpe-m-badge-cefr" id="levelCefrM">A1</span></div>
       <div class="bpe-hearts bpe-hearts-m" id="heartsM" aria-live="polite"></div>
+      <div class="bpe-m-score" aria-label="Score"><img src="assets/hd/star.png" alt="" draggable="false"><span id="scoreValM">0</span></div>
       <button class="bpe-m-pause" id="btnPauseMobile" type="button" aria-label="Pause"><img src="assets/hd/pause.png" alt=""></button>
     </div>
 
@@ -133,8 +134,7 @@
       </div>
       <div class="bpe-q-opts bpe-m-q-opts" id="qOptsM"></div>
       <div class="bpe-m-q-sub">
-        <span class="bpe-m-q-stat"><img src="assets/icons/icon-star-full.svg" class="bpe-m-q-ico" alt=""><span id="scoreValM">0</span></span>
-        <span class="bpe-m-q-stat" id="progTextM">1 / 4</span>
+        <span class="bpe-m-q-stat"><b>Question</b><span id="progTextM">1 / 4</span></span>
         <span class="bpe-m-q-stat" id="timerValM">0:00</span>
         <span class="bpe-m-q-stat bpe-m-combo" id="comboValM">×1</span>
       </div>
@@ -142,6 +142,17 @@
     </div>
 
     <div class="bpe-m-dock" id="mDock">
+      <div class="bpe-m-pu-row" aria-label="Power-ups">
+        <button class="bpe-pu bpe-pu-dock" type="button" data-pu="rainbow" aria-label="Rainbow bubble: matches any colour">
+          <img src="assets/icons/powerup-rainbow.svg" alt=""><span class="bpe-pu-badge" data-badge-for="rainbow">1</span>
+        </button>
+        <button class="bpe-pu bpe-pu-dock" type="button" data-pu="heart" aria-label="Extra heart">
+          <img src="assets/hd/heart.png" alt=""><span class="bpe-pu-badge" data-badge-for="heart">1</span>
+        </button>
+        <button class="bpe-pu bpe-pu-dock" type="button" data-pu="aim" aria-label="Aiming guide">
+          <img src="assets/hd/target.png" alt=""><span class="bpe-pu-badge" data-badge-for="aim">2</span>
+        </button>
+      </div>
       <button class="bpe-m-pu" id="btnPuDock" type="button" aria-label="Power-ups" aria-expanded="false">
         <img src="assets/icons/powerup-rainbow.svg" alt=""><span class="bpe-pu-badge" id="puBadgeDock">4</span>
       </button>
@@ -233,6 +244,8 @@
           <li><img src="assets/icons/icon-star-full.svg" alt=""><div><b>Find the answer</b> inside the bubbles — three other choices are hiding up there too.</div></li>
           <li><img src="assets/hd/target.png" alt=""><div><b>Aim and shoot</b> with your mouse or finger. Bubbles bounce off the side walls!</div></li>
           <li><img src="assets/hd/heart.png" alt=""><div><b>Match the colour</b>: your shot must join <b>3 same-colour bubbles</b> on the correct answer. Wrong shots cost a heart.</div></li>
+          <li><img src="assets/hd/bubble-blue.png" alt=""><div><b>Coloured obstacles</b> are not answers. Pop a group of 3+ of their colour to clear them for bonus points — or aim around them. They fall when they lose their support!</div></li>
+          <li><img src="assets/icons/powerup-rainbow.svg" alt=""><div><b>Watch the cannon</b>: the loaded bubble and the <b>Next</b> preview show your upcoming colours. The queue always holds a colour that can win.</div></li>
           <li><img src="assets/icons/icon-star-full.svg" alt=""><div><b>Score and combos.</b> Four correct answers finish the level. No mistakes = 3 stars!</div></li>
         </ol>
         <div class="bpe-dialog-actions">

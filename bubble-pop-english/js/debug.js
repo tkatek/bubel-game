@@ -50,13 +50,19 @@ export class DebugOverlay {
     const scaleInfo = `world ${Math.round(world.W)}×${Math.round(world.H)} cols=${world.cols} view scale=${v.scale.toFixed(3)} dpr=${v.dpr}`;
     const pointer = game.lastPointerWorld
       ? `pointer w=(${game.lastPointerWorld.x.toFixed(0)},${game.lastPointerWorld.y.toFixed(0)})` : '';
+    const st = game.state;
+    const cells = world.board.entries();
+    const answers = cells.filter((b) => b.option != null).length;
+    const neutrals = cells.length - answers;
+    const queue = st.queue.length ? st.queue.join('>') : '—';
     const lines = [
-      `BPE debug — ${game.state.suspended ? 'SUSPENDED ' : ''}${game.state.phase}${game.state.shot ? ' shot:' + game.state.shot.id : ''}`,
+      `BPE debug — ${st.suspended ? 'SUSPENDED ' : ''}${st.phase}${st.shot ? ' shot:' + st.shot.id : ''}`,
       scaleInfo, pointer,
+      `bubbles ${cells.length} = ${answers} answer + ${neutrals} neutral · loaded=${st.loadedColor} queue=[${queue}]`,
     ];
     ctx.font = '11px monospace';
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(6, 4, 340, 16 * lines.length + 6);
+    ctx.fillRect(6, 4, 460, 16 * lines.length + 6);
     ctx.fillStyle = '#7fff9f';
     lines.forEach((l, i) => ctx.fillText(l, 10, 18 + i * 16));
     ctx.restore();

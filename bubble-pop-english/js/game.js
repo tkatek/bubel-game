@@ -208,7 +208,7 @@ export class Game {
       // answer labels is passed over — the next seed re-arranges the clusters.
       // Text size is never shrunk below the readable floor to force a fit.
       const probe = makeWorld(this.cols, puzzle.clusters);
-      probe.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
+      probe.fitStage(this.layout.cssW, this.layout.cssH, this.layout.dpr);
       if (computeLabelLayouts(probe, textFor, this.layout.dpr).infeasible.length) continue;
       built = { clusters: puzzle.clusters, queue };
     }
@@ -228,7 +228,7 @@ export class Game {
     st.nextColor = st.queue[1] ?? st.queue[0];
     this.renderer.clearTransient();
     this.world = makeWorld(this.cols, built.clusters);
-    this.world.setView(this.layout.cssW, this.layout.cssH, this.layout.dpr);
+    this.world.fitStage(this.layout.cssW, this.layout.cssH, this.layout.dpr);
     this.world.labels = computeLabelLayouts(this.world, textFor, this.layout.dpr).layouts;
   }
 

@@ -8,7 +8,6 @@
 <link rel="icon" type="image/svg+xml" href="assets/icons/icon-star-full.svg">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/desktop.css">
 <link rel="stylesheet" href="css/tablet.css">
 <link rel="stylesheet" href="css/mobile.css">
@@ -26,58 +25,62 @@
   <!-- ===================== GAME SHELL ===================== -->
   <div class="bpe-shell">
 
-    <!-- Header (desktop / tablet-landscape) -->
+    <!-- Header (desktop / tablet-landscape): logo | question | score+pause -->
     <header class="bpe-header">
       <div class="bpe-logo"><img src="assets/icons/logo.svg" alt="Bubble Pop English"></div>
 
       <div class="bpe-question" id="questionBar">
-        <i class="bpe-frame bpe-frame-question" aria-hidden="true"></i>
         <div class="bpe-q-book"><img src="assets/hd/book.png" alt=""></div>
-        <div class="bpe-q-text" id="qText" role="heading" aria-level="1">Loading…</div>
-        <div class="bpe-q-opts" id="qOpts"></div>
+        <div class="bpe-q-main">
+          <div class="bpe-q-text" id="qText" role="heading" aria-level="1">Loading…</div>
+          <div class="bpe-q-opts" id="qOpts"></div>
+        </div>
         <div class="bpe-q-color" id="qColorChip" title=""><span class="bpe-q-color-dot"></span><span class="bpe-q-color-name" id="qColorName"></span></div>
       </div>
 
       <div class="bpe-scorezone">
-        <div class="bpe-pills">
-          <div class="bpe-pill">
-            <img class="bpe-pill-ico" src="assets/hd/star.png" alt="" draggable="false">
-            <div class="bpe-pill-text"><span class="bpe-pill-label">Score</span><span class="bpe-pill-value" id="scoreVal">0</span></div>
-          </div>
-          <div class="bpe-pill">
-            <img class="bpe-pill-ico" src="assets/hd/clock.png" alt="" draggable="false">
-            <div class="bpe-pill-text"><span class="bpe-pill-label">Time</span><span class="bpe-pill-value" id="timerVal">00:00</span></div>
-          </div>
+        <div class="bpe-pill">
+          <img class="bpe-pill-ico" src="assets/hd/star.png" alt="" draggable="false">
+          <div class="bpe-pill-text"><span class="bpe-pill-label">Score</span><span class="bpe-pill-value" id="scoreVal">0</span></div>
+        </div>
+        <div class="bpe-pill">
+          <img class="bpe-pill-ico" src="assets/hd/clock.png" alt="" draggable="false">
+          <div class="bpe-pill-text"><span class="bpe-pill-label">Time</span><span class="bpe-pill-value" id="timerVal">00:00</span></div>
         </div>
         <button class="bpe-settings" id="btnPauseDesktop" type="button" aria-label="Pause and settings">
-          <img class="bpe-panel-art" src="assets/hd/pause.png" alt="" draggable="false">
+          <img src="assets/hd/pause.png" alt="" draggable="false">
         </button>
       </div>
     </header>
 
-    <!-- Left rail: status panel -->
+    <!-- Left rail: compact status panel -->
     <aside class="bpe-rail-left" id="statusRail">
-      <i class="bpe-frame bpe-frame-status" aria-hidden="true"></i>
-      <div class="bpe-status-content">
-        <div class="bpe-status-level">
-          <div class="bpe-status-kicker">Level</div>
-          <div class="bpe-status-num" id="levelNum">1</div>
-          <div class="bpe-status-cefr" id="levelCefr">A1</div>
-        </div>
-        <div class="bpe-status-block">
-          <div class="bpe-status-label">Question</div>
-          <div class="bpe-status-quest" id="progText">1 / 4</div>
-          <div class="bpe-qbar"><div class="bpe-qbar-fill" id="qBar"></div></div>
-        </div>
-        <div class="bpe-status-block">
-          <div class="bpe-status-label">Lives</div>
-          <div class="bpe-hearts" id="hearts" aria-live="polite"></div>
-        </div>
-        <div class="bpe-status-block">
-          <div class="bpe-status-label">Combo</div>
-          <div class="bpe-combo">
-            <div class="bpe-combo-head"><svg class="bpe-flame" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#ff9f43" d="M12 2c1 3-2 4.5-2 7a4 4 0 0 0 8 .3C20 12 21 14 21 16a9 9 0 1 1-18 0c0-3.2 1.6-5.4 3.4-7.4C8.2 6.6 10 4.8 12 2z"/><path fill="#ffce3c" d="M12 10c.6 1.6-1.2 2.4-1.2 4a2.6 2.6 0 0 0 5.2.2c1.2 1 1.8 2 1.8 3.3A5.8 5.8 0 1 1 6.2 17c0-2.6 2-4.6 3.4-6 .9-.9 1.7-1.6 2.4-1z" opacity=".9"/></svg><span class="bpe-combo-val" id="comboVal">×1</span></div>
-            <div class="bpe-combo-track"><div class="bpe-combo-fill" id="comboFill"></div></div>
+      <div class="bpe-panel bpe-panel-status">
+        <div class="bpe-status-content">
+          <div class="bpe-status-level">
+            <div class="bpe-status-kicker">Level</div>
+            <div class="bpe-status-row">
+              <span class="bpe-status-num" id="levelNum">1</span>
+              <span class="bpe-status-cefr" id="levelCefr">A1</span>
+            </div>
+          </div>
+          <div class="bpe-status-block">
+            <div class="bpe-status-head">
+              <span class="bpe-status-label">Question</span>
+              <span class="bpe-status-quest" id="progText">1 / 4</span>
+            </div>
+            <div class="bpe-segs" id="progSegs"><i class="bpe-seg"></i><i class="bpe-seg"></i><i class="bpe-seg"></i><i class="bpe-seg"></i></div>
+          </div>
+          <div class="bpe-status-block">
+            <div class="bpe-status-head"><span class="bpe-status-label">Lives</span></div>
+            <div class="bpe-hearts" id="hearts" aria-live="polite"></div>
+          </div>
+          <div class="bpe-status-block">
+            <div class="bpe-status-head"><span class="bpe-status-label">Combo</span></div>
+            <div class="bpe-combo">
+              <div class="bpe-combo-head"><svg class="bpe-flame" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="#ff9f43" d="M12 2c1 3-2 4.5-2 7a4 4 0 0 0 8 .3C20 12 21 14 21 16a9 9 0 1 1-18 0c0-3.2 1.6-5.4 3.4-7.4C8.2 6.6 10 4.8 12 2z"/><path fill="#ffce3c" d="M12 10c.6 1.6-1.2 2.4-1.2 4a2.6 2.6 0 0 0 5.2.2c1.2 1 1.8 2 1.8 3.3A5.8 5.8 0 1 1 6.2 17c0-2.6 2-4.6 3.4-6 .9-.9 1.7-1.6 2.4-1z" opacity=".9"/></svg><span class="bpe-combo-val" id="comboVal">×1</span></div>
+              <div class="bpe-combo-track"><div class="bpe-combo-fill" id="comboFill"></div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -89,23 +92,24 @@
       <div class="bpe-owl" id="owlMascot"><img src="assets/hd/owl.png" alt="Owl teacher mascot"></div>
     </main>
 
-    <!-- Right rail: power-ups -->
+    <!-- Right rail: compact power-ups -->
     <aside class="bpe-rail-right" id="powerupsRail">
-      <i class="bpe-frame bpe-frame-powerups" aria-hidden="true"></i>
-      <div class="bpe-powerups-content">
-        <div class="bpe-status-kicker bpe-powerups-title">Power-ups</div>
-        <button class="bpe-pu" type="button" data-pu="rainbow" aria-label="Rainbow bubble: matches any colour">
-          <img src="assets/icons/powerup-rainbow.svg" alt="">
-          <span class="bpe-pu-badge" id="puBadgeRainbow">1</span>
-        </button>
-        <button class="bpe-pu" type="button" data-pu="heart" aria-label="Extra heart">
-          <img src="assets/hd/heart.png" alt="">
-          <span class="bpe-pu-badge" id="puBadgeHeart">1</span>
-        </button>
-        <button class="bpe-pu" type="button" data-pu="aim" aria-label="Aiming guide">
-          <img src="assets/hd/target.png" alt="">
-          <span class="bpe-pu-badge" id="puBadgeAim">2</span>
-        </button>
+      <div class="bpe-panel bpe-panel-powerups">
+        <div class="bpe-powerups-content">
+          <div class="bpe-status-kicker bpe-powerups-title">Power-ups</div>
+          <button class="bpe-pu" type="button" data-pu="rainbow" aria-label="Rainbow bubble: matches any colour">
+            <img src="assets/icons/powerup-rainbow.svg" alt="">
+            <span class="bpe-pu-badge" id="puBadgeRainbow">1</span>
+          </button>
+          <button class="bpe-pu" type="button" data-pu="heart" aria-label="Extra heart">
+            <img src="assets/hd/heart.png" alt="">
+            <span class="bpe-pu-badge" id="puBadgeHeart">1</span>
+          </button>
+          <button class="bpe-pu" type="button" data-pu="aim" aria-label="Aiming guide">
+            <img src="assets/hd/target.png" alt="">
+            <span class="bpe-pu-badge" id="puBadgeAim">2</span>
+          </button>
+        </div>
       </div>
     </aside>
 

@@ -363,17 +363,18 @@ export function pickClusterLayout(cols, rng) {
 }
 
 // Density windows from the board-design targets (task 3): beginner 20–28,
-// intermediate 28–38, advanced 35–46 bubbles on desktop; phone/tablet boards
-// cap to the playable width. `obstacleBudget` (LEVEL_CONFIG) can lift the
-// floor a little within the window on early levels but never breaks the
-// designed ranges — a 12-bubble board is exactly the empty field this task
-// replaces, and boards denser than the ceiling seal answer grooves.
+// intermediate 26–36, advanced 30–44 bubbles on desktop; phone/tablet boards
+// cap to the playable width — answer grooves keep a straight-in approach
+// cone (fairness), and on narrow boards that cone claims a real share of the
+// grid, so the honest achievable range sits a little under the desktop one.
+// `obstacleBudget` (LEVEL_CONFIG) can lift the floor a little within the
+// window on early levels.
 export function densityTargets(level, cols, obstacleBudget = 0) {
   const tier = level <= 5 ? 0 : level <= 10 ? 1 : 2;
-  const desktop = [[20, 28], [28, 38], [35, 46]][tier];
-  const narrow = { 8: [18, 30], 9: [22, 34], 10: [24, 40] };
+  const desktop = [[20, 28], [26, 36], [30, 44]][tier];
+  const narrow = { 8: [16, 26], 9: [20, 30], 10: [22, 36] };
   const range = narrow[cols] || desktop;
-  const lo = tier === 0 ? range[0] : Math.max(range[0], desktop[0] - 4);
+  const lo = tier === 0 ? range[0] : Math.max(range[0], desktop[0] - 2);
   const hi = Math.min(range[1], desktop[1]);
   const bump = Math.min(Math.max(0, obstacleBudget | 0), 4);
   return { lo: Math.min(lo + bump, hi - 4), hi, tier };

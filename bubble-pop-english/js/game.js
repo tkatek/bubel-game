@@ -194,21 +194,23 @@ export class Game {
     const textFor = this.answerTextById();
 
     let built = null;
-    let hardBuilt = null; // best candidate meeting the fairness floor
+    let hardBuilt = null;   // fairness floor: every option ≥2 windows, correct ≥3
+    let looseBuilt = null;  // last resort: every option ≥1 window, correct ≥2
     const cfg = configFor(st.level);
     // Density retreat: early attempts aim mid-window (full boards); if the
     // physics gate keeps rejecting, later attempts trade density for open
     // lanes instead of lowering the certificate.
     const biasFor = (attempt) => (attempt < 5 ? 0.55 : attempt < 8 ? 0.3 : 0.08);
-    // Hard fairness floor (never compromised): every option selectable
-    // through ≥ 2 aim windows, the correct one through ≥ 3. The strict
-    // LEVEL_CONFIG.minDirectAngles knob is preferred; the floor is the
-    // acceptance minimum before falling back to the curated layout family.
+    // Acceptance ladder (never below "genuinely selectable"): strict
+    // LEVEL_CONFIG.minDirectAngles → fairness floor → selectability floor.
     const winsOf = (gate) => letters.map((o) => gate.direct[o]?.angles ?? 0);
     const meetsFloor = (gate) => {
       if (!gate) return false;
-      const correct = gate.direct[st.question.correct]?.angles ?? 0;
-      return winsOf(gate).every((w) => w >= 2) && correct >= 3;
+      return winsOf(gate).every((w) => w >= 2) && (gate.direct[st.question.correct]?.angles ?? 0) >= 3;
+    };
+    const meetsLoose = (gate) => {
+      if (!gate) return false;
+      return winsOf(gate).every((w) => w >= 1) && (gate.direct[st.question.correct]?.angles ?? 0) >= 2;
     };
     for (let attempt = 0; attempt < BOARD_ATTEMPTS && !built; attempt++) {
       const seed = (this.qSeed + attempt * 7919) >>> 0;
@@ -232,19 +234,21 @@ export class Game {
       const probe = makeWorld(this.cols, puzzle.clusters);
       probe.fitStage(this.layout.cssW, this.layout.cssH, this.layout.dpr);
       if (computeLabelLayouts(probe, textFor, this.layout.dpr).infeasible.length) continue;
+      const minAngles = attempt < 5 ? cfg.minDirectAngles : attempt < 8 ? 2 : 1;
       const gate = checkBoardSolvable({
         cols: this.cols, clusters: puzzle.clusters, loadedColor: st.loadedColor,
-        correctOption: st.question.correct, queue, options: letters,
-        minAngles: attempt < 5 ? cfg.minDirectAngles : 2, // retreat to the floor late
+        correctOption: st.question.correct, queue, options: letters, minAngles,
       });
       if (!gate.ok) {
         if (!hardBuilt && meetsFloor(gate)) hardBuilt = { clusters: puzzle.clusters, queue };
+        if (!looseBuilt && meetsLoose(gate)) looseBuilt = { clusters: puzzle.clusters, queue };
         continue;
       }
       built = { clusters: puzzle.clusters, queue };
     }
 
     if (!built && hardBuilt) built = hardBuilt;
+    if (!built && looseBuilt) built = looseBuilt;
 
     if (!built) {
       // Curated fallback: legacy audited four-cluster packing (no neutrals).

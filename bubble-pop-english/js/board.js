@@ -245,12 +245,12 @@ const SHAPES = [
   [[0, 0], [1, 0], [1, 1]],
 ];
 
-// Anchor rows a cluster may start at. Keeping clusters in the top two bands
-// matters for aim windows: a deep cluster shields the grooves of the cluster
-// above it (measured: row-0 strips behind row-3/4 clusters dropped from ~40
-// winning angles to ~3). Rows 0/2 leave every groove approachable from open
-// field; the full, deep look comes from the neutral rafts hanging below.
-const ANCHOR_ROWS = [0, 0, 2, 2];
+// Anchor rows a cluster may start at. Clusters never touch each other but
+// may sit near one another (staggered bands read as a cascade and keep every
+// groove's approach short); the deep-cluster shielding worry is handled by
+// the corridor protection in buildPuzzleBoard plus the physics gate, not by
+// banning depth.
+const ANCHOR_ROWS = [0, 1, 2, 3];
 
 function clusterSlots(cols) {
   const slots = [];
@@ -290,13 +290,58 @@ function slotCompatible(cols, a, b) {
   const aAdj = neigh(aCells), bAdj = neigh(bCells);
   for (const k of aAdj) if (bCells.has(k)) return false;   // clusters touch
   for (const k of bAdj) if (aCells.has(k)) return false;
-  for (const k of aAdj) if (bAdj.has(k)) return false;     // shared empty cell
+  // No shielding: a cluster may not occupy another cluster's pop grooves
+  // (cells touching ≥2 of its bubbles) or the full straight-in cone below
+  // them — clusters parked inside that cone measured as 0 winning angles in
+  // the harness (the cone is the same one neutral rafts must respect).
+  const corridor = (own, otherCells) => {
+    const out = new Set();
+    for (let r = 0; r <= MAX_ROW; r++) {
+      for (let c = 0; c < (r % 2 === 0 ? cols : cols - 1); c++) {
+        const k = `${r},${c}`;
+        if (own.has(k) || otherCells.has(k)) continue;
+        let n = 0;
+        for (const [nr, nc] of (() => {
+          const even = r % 2 === 0;
+          return even
+            ? [[r, c - 1], [r, c + 1], [r - 1, c - 1], [r - 1, c], [r + 1, c - 1], [r + 1, c]]
+            : [[r, c - 1], [r, c + 1], [r - 1, c], [r - 1, c + 1], [r + 1, c], [r + 1, c + 1]];
+        })()) {
+          if (own.has(`${nr},${nc}`)) n++;
+        }
+        if (n < 2) continue;
+        out.add(k);
+        let frontier = [[r, c]];
+        while (frontier.length) {
+          const next = [];
+          for (const [cr, cc] of frontier) {
+            const dn = cr % 2 === 0 ? [[cr + 1, cc - 1], [cr + 1, cc]] : [[cr + 1, cc], [cr + 1, cc + 1]];
+            for (const [nr, nc] of dn) {
+              if (nr < 0 || nr > MAX_ROW || nc < 0 || nc >= (nr % 2 === 0 ? cols : cols - 1)) continue;
+              const kk = `${nr},${nc}`;
+              if (out.has(kk) || otherCells.has(kk)) continue;
+              out.add(kk);
+              next.push([nr, nc]);
+            }
+          }
+          frontier = next;
+        }
+      }
+    }
+    return out;
+  };
+  for (const k of corridor(aCells, bCells)) if (bCells.has(k)) return false;
+  for (const k of corridor(bCells, aCells)) if (aCells.has(k)) return false;
+  // Shared empty cells are allowed: a landing that joins two clusters pops
+  // both, and the selection is the cluster the projectile STRUCK (see
+  // beginResolve in game.js) — deterministic, never an ambiguous coin flip.
   return true;
 }
 
 // Pick four mutually-compatible cluster slots, one per horizontal zone where
-// possible, mixing ceiling-anchored and hanging placements. Falls back to the
-// curated TEMPLATES family when no procedural packing fits.
+// possible, mixing ceiling-anchored and staggered hanging placements. Falls
+// back to the curated physics-audited TEMPLATES family when no procedural
+// packing fits.
 export function pickClusterLayout(cols, rng) {
   const slots = clusterSlots(cols);
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -317,16 +362,25 @@ export function pickClusterLayout(cols, rng) {
   return base.map((cells) => cells.map(m));
 }
 
-// Density window per level, derived from the LEVEL_CONFIG obstacle budget:
-// budget 0 → an open 12-cell board (Levels 1–2 teach on an open frame), and
-// each budgeted neutral cell adds to the designed density. `slack` leaves
-// room for the last placed group overshooting its target size; narrow boards
-// get a touch more because growth stalls differently there.
+// Density windows from the board-design targets (task 3): beginner 20–28,
+// intermediate 28–38, advanced 35–46 bubbles on desktop; phone/tablet boards
+// cap to the playable width. `obstacleBudget` (LEVEL_CONFIG) can lift the
+// floor a little within the window on early levels but never breaks the
+// designed ranges — a 12-bubble board is exactly the empty field this task
+// replaces, and boards denser than the ceiling seal answer grooves.
 export function densityTargets(level, cols, obstacleBudget = 0) {
-  const budget = Math.max(0, Math.min(14, obstacleBudget | 0));
-  const slack = cols <= 9 ? 5 : 4;
-  return { lo: 12, hi: 12 + budget + slack, tier: level <= 5 ? 0 : level <= 10 ? 1 : 2 };
+  const tier = level <= 5 ? 0 : level <= 10 ? 1 : 2;
+  const desktop = [[20, 28], [28, 38], [35, 46]][tier];
+  const narrow = { 8: [18, 30], 9: [22, 34], 10: [24, 40] };
+  const range = narrow[cols] || desktop;
+  const lo = tier === 0 ? range[0] : Math.max(range[0], desktop[0] - 4);
+  const hi = Math.min(range[1], desktop[1]);
+  const bump = Math.min(Math.max(0, obstacleBudget | 0), 4);
+  return { lo: Math.min(lo + bump, hi - 4), hi, tier };
 }
+
+// Dev diagnostics: why buildPuzzleBoard last returned null (harness/tests).
+export let lastReject = '';
 
 // Build a full puzzle board: four answer clusters in `loadedColor` plus a
 // neutral obstacle field in the other three colours. Deterministic in
@@ -352,7 +406,14 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
   const board = new HexBoard(cols, clusters);
   const budget = Math.max(0, Math.min(14, obstacleBudget | 0));
   const { lo, hi } = densityTargets(level, cols, budget);
-  const wantNeutral = Math.round(budget * (0.5 + 0.5 * Math.min(1, Math.max(0, densityBias))));
+  // Neutral-cell target from the density window; densityBias retreats toward
+  // the open end on retries, and the obstacle budget acts as a small floor.
+  const neutralLo = Math.max(0, lo - 12);
+  const neutralHi = Math.max(0, hi - 12);
+  const wantNeutral = Math.min(
+    neutralHi,
+    Math.max(Math.round(neutralLo + (neutralHi - neutralLo) * Math.min(1, Math.max(0, densityBias))), Math.min(budget, neutralHi)),
+  );
 
   // Cluster-adjacency limit: a placed neutral may touch at most one cluster,
   // so popping it can never expose a cell that bridges two answers.
@@ -366,8 +427,8 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
   };
 
   // Landing reserve: a candidate group is only accepted if every answer
-  // cluster keeps ≥3 empty neighbour cells afterwards, so a loaded shot can
-  // always find a landing notch on every answer (the physics gate in
+  // cluster keeps ≥2 empty neighbour cells afterwards, so a loaded shot can
+  // still find a landing notch on every answer (the physics gate in
   // solver.js re-verifies with real trajectories).
   const keepsLanding = () => {
     for (const cl of clusters) {
@@ -377,10 +438,38 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
           if (!board.has(nr, nc)) free++;
         }
       }
-      if (free < 3) return false;
+      if (free < 2) return false;
     }
     return true;
   };
+
+  // Approach corridors: a groove cell (touching ≥2 cells of one cluster —
+  // where a landing pops the answer) plus the full cone of cells straight
+  // below it stay free of neutral bubbles. Shots come from the cannon at
+  // the bottom, so this cone is the groove's reachable approach; rafts
+  // hanging through it measured as 0 winning angles for whole clusters in
+  // the harness. Corridor cells remain landable by shots, and grooves near
+  // the board bottom cost almost nothing (their cones run off-grid).
+  const protectedCells = new Set();
+  for (let r = 0; r <= MAX_ROW; r++) {
+    for (let c = 0; c < board.colSpan(r); c++) {
+      if (board.has(r, c) || clusterTouchLimit(r, c) < 2) continue;
+      protectedCells.add(board.key(r, c));
+      let frontier = [[r, c]];
+      while (frontier.length) {
+        const next = [];
+        for (const [cr, cc] of frontier) {
+          const dn = cr % 2 === 0 ? [[cr + 1, cc - 1], [cr + 1, cc]] : [[cr + 1, cc], [cr + 1, cc + 1]];
+          for (const [nr, nc] of dn) {
+            if (!board.inGrid(nr, nc) || board.has(nr, nc)) continue;
+            const k = board.key(nr, nc);
+            if (!protectedCells.has(k)) { protectedCells.add(k); next.push([nr, nc]); }
+          }
+        }
+        frontier = next;
+      }
+    }
+  }
 
   const placed = [];
   let placedCells = 0;
@@ -397,7 +486,7 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
     const freeCells = [];
     for (let r = 0; r <= MAX_ROW; r++) {
       for (let c = 0; c < board.colSpan(r); c++) {
-        if (board.has(r, c) || clusterTouchLimit(r, c) > 1) continue;
+        if (board.has(r, c) || clusterTouchLimit(r, c) > 1 || protectedCells.has(board.key(r, c))) continue;
         const supported = r === 0 || board.neighbors(r, c).some(([nr, nc]) => board.has(nr, nc));
         if (supported) freeCells.push([r, c]);
       }
@@ -416,7 +505,7 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
       for (let s = 1; s < size; s++) {
         const cand = board.neighbors(cur[0], cur[1]).filter(([nr, nc]) => {
           if (board.has(nr, nc) || group.some(([gr, gc]) => gr === nr && gc === nc)) return false;
-          if (clusterTouchLimit(nr, nc) > 1) return false;
+          if (clusterTouchLimit(nr, nc) > 1 || protectedCells.has(board.key(nr, nc))) return false;
           // keep the group connected & supportable: neighbour of group or anchor row
           return true;
         });
@@ -439,13 +528,52 @@ export function buildPuzzleBoard({ cols, level, options, loadedColor, seed, obst
     }
   }
 
+  // Top-off pass: when fragmented space leaves the board below target, grow
+  // the EXISTING rafts into adjacent free allowed cells (same colour, so
+  // every group stays a connected ≥3 matchable mass — no orphans).
+  if (placed.length && placedCells < wantNeutral) {
+    let grew = true;
+    let rounds = 0;
+    while (grew && placedCells < wantNeutral && rounds++ < 24) {
+      grew = false;
+      for (const g of placed) {
+        if (placedCells >= wantNeutral) break;
+        const cand = [];
+        for (const [gr, gc] of g.cells) {
+          for (const [nr, nc] of board.neighbors(gr, gc)) {
+            if (board.has(nr, nc) || clusterTouchLimit(nr, nc) > 1 || protectedCells.has(board.key(nr, nc))) continue;
+            cand.push([nr, nc]);
+          }
+        }
+        while (cand.length && placedCells < wantNeutral) {
+          const idx = Math.floor(rng() * cand.length);
+          const [r, c] = cand.splice(idx, 1)[0];
+          if (board.has(r, c)) continue;
+          board.set(r, c, { color: g.color, option: null });
+          const unsupported = board.unsupported().some((u) => u.r === r && u.c === c);
+          if (unsupported || !keepsLanding()) {
+            board.remove(r, c);
+            continue;
+          }
+          g.cells.push([r, c]);
+          placedCells++;
+          grew = true;
+        }
+      }
+    }
+  }
+
   const neutralGroups = board.neutralGroups();
   const total = board.cells.size;
-  // Reject boards that miss the density window by a wide margin — the caller
-  // reseeds; the curated fallback covers pathological seeds.
-  if (total < lo - 2 || total > hi + 4) return null;
-  if (neutralGroups.some((g) => g.cells.length < 3)) return null;
-  if (board.unsupported().length) return null;
+  // Overshoot is a real visual/geometry problem (packed ceilings) — reject.
+  // UNDERSHOOT is not: the board returns with whatever density placed, and
+  // the CALLER decides (strict window early, relaxed late) — throwing these
+  // away starved the physics gate of candidates entirely. Diagnostics in
+  // lastRejectReason.
+  if (total > hi + 4) { lastReject = `density ${total} > ${hi + 4}`; return null; }
+  if (!neutralGroups.length && placed.length) { lastReject = 'placed cells lost groups'; return null; }
+  if (neutralGroups.some((g) => g.cells.length < 3)) { lastReject = 'neutral group < 3'; return null; }
+  if (board.unsupported().length) { lastReject = 'unsupported cells at load'; return null; }
 
   return {
     clusters: [...clusters, ...placed.map((g) => ({ option: null, cells: g.cells, color: g.color, kind: 'neutral' }))],
@@ -498,11 +626,17 @@ export function validateBoard(cols, cells, opts = {}) {
     if (seen.size !== 3) errors.push(`cluster ${opt}: not connected`);
   }
   if (clusters.size !== 4) errors.push(`expected 4 answer clusters, got ${clusters.size}`);
-  // no cell may touch two different clusters (landing ambiguity)
-  for (let r = 0; r <= MAX_ROW; r++) {
-    for (let c = 0; c < board.colSpan(r); c++) {
-      const opts = new Set(board.neighbors(r, c).map(([nr, nc]) => board.get(nr, nc)).filter((x) => x && x.option != null).map((x) => x.option));
-      if (opts.size > 1) errors.push(`cell ${r},${c} touches clusters ${[...opts].join('+')}`);
+  // clusters must not touch each other (shared empty cells are fine — a
+  // landing that joins two clusters selects the struck cluster, see
+  // beginResolve in game.js)
+  for (const [opt, clCells] of clusters) {
+    for (const [r, c] of clCells) {
+      for (const [nr, nc] of board.neighbors(r, c)) {
+        const other = board.get(nr, nc);
+        if (other && other.option != null && other.option !== opt) {
+          errors.push(`clusters ${opt}/${other.option} touch at ${r},${c}`);
+        }
+      }
     }
   }
   // support: everything anchored at load

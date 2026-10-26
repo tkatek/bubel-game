@@ -217,8 +217,13 @@ export class Game {
         obstacleBudget: cfg.obstacleBudget, densityBias: biasFor(attempt),
       });
       if (!puzzle) continue;
+      // Density: strict window on early attempts (fuller look), relaxed on
+      // late ones — a sparser passing board beats no board. Overshoot is
+      // always rejected by the generator itself.
       const errs = validateBoard(this.cols, cellsOf(puzzle.clusters), {
-        loadedColor: st.loadedColor, ...puzzle.targets,
+        loadedColor: st.loadedColor,
+        lo: attempt < 5 ? puzzle.targets.lo : 12,
+        hi: puzzle.targets.hi,
       });
       if (errs.length) continue;
       const queue = buildAmmunitionQueue({ neutralGroups: puzzle.neutralGroups, loadedColor: st.loadedColor, seed });
@@ -365,9 +370,14 @@ export class Game {
         const cell = this.world.board.get(gr, gc);
         if (cell && cell.option) opts.add(cell.option);
       }
-      if (opts.size === 1) {
-        // clean cluster pop → this shot chose an answer
-        const chosen = [...opts][0];
+      // Selection rule: the answer chosen is the cluster the projectile
+      // STRUCK — the one the player aimed at. A popped group may span two
+      // clusters (clusters never touch, but a landing cell may join them);
+      // the other cluster is consumed by the same pop as a chain reaction
+      // and never decides the outcome. No landing is ever ambiguous.
+      const hitCell = event.type === 'bubble' && event.hitCell ? this.world.board.get(event.hitCell.r, event.hitCell.c) : null;
+      const struck = hitCell && hitCell.option ? hitCell.option : (opts.size === 1 ? [...opts][0] : null);
+      if (struck) {
         const centers = group.map(([gr, gc]) => this.world.board.cellCenter(gr, gc, this.world.D));
         const at = centroidOf(centers);
         for (const [gr, gc] of group) this.world.board.remove(gr, gc);
@@ -376,7 +386,7 @@ export class Game {
         this.renderer.spawnPopBurst(centers, landColor, { size: group.length });
         this.spawnFallers(falls);
         this.pendingOutcome = {
-          kind: 'popped', option: chosen, falls: falls.length,
+          kind: 'popped', option: struck, falls: falls.length,
           bounces: st.shot ? (st.shot.bounces || 0) : 0,
           shotsUsed: st.shotsQuestion, at,
         };
@@ -385,9 +395,10 @@ export class Game {
         this.audio.play('pop', { combo: st.combo, big: group.length > 4 });
         return;
       }
-      if (opts.size > 1) {
-        // Validated boards make this impossible; recover without penalty.
-        console.warn('BPE: ambiguous landing (touched two clusters) — recovered without penalty');
+      // Ceiling landing into a multi-cluster group with no struck cell:
+      // cannot happen on gated boards; recover without penalty.
+      if (opts.size > 0) {
+        console.warn('BPE: pop without a selectable cluster — recovered without penalty');
         for (const [gr, gc] of group) this.world.board.remove(gr, gc);
         this.world.board.dropUnsupported();
         st.shot = null;

@@ -46,7 +46,7 @@ function buildQuestion({ cols, level, q, qSeed: seed, loadedColor, optionsOrder 
     const s = (seed + attempt * 7919) >>> 0;
     const puzzle = buildPuzzleBoard({ cols, level, options: letters, loadedColor, seed: s, obstacleBudget: cfg.obstacleBudget, densityBias: biasFor(attempt) });
     if (!puzzle) continue;
-    const errs = validateBoard(cols, cellsOf(puzzle.clusters), { loadedColor, ...puzzle.targets });
+    const errs = validateBoard(cols, cellsOf(puzzle.clusters), { loadedColor, lo: attempt < 5 ? puzzle.targets.lo : 12, hi: puzzle.targets.hi });
     if (errs.length) continue;
     const queue = buildAmmunitionQueue({ neutralGroups: puzzle.neutralGroups, loadedColor, seed: s });
     const gate = checkBoardSolvable({
@@ -63,7 +63,8 @@ function buildQuestion({ cols, level, q, qSeed: seed, loadedColor, optionsOrder 
 }
 
 // End-to-end physics check: fire the solver's own winning angle and confirm
-// the correct option pops (this is what a player's direct shot does).
+// the correct option pops AND is selected (this is what a player's direct
+// shot does).
 function fireWinningShot({ cols, clusters, loadedColor, correctOption }) {
   const sim = makeSim(cols, clusters);
   const direct = surveyDirectShots(sim, loadedColor);
@@ -71,8 +72,8 @@ function fireWinningShot({ cols, clusters, loadedColor, correctOption }) {
   if (!win || !win.angles) return { ok: false, why: 'no winning angle to re-fire' };
   const out = simulateShot(sim, win.first, loadedColor);
   if (!out.landed) return { ok: false, why: 'winning shot fizzled' };
-  if (out.poppedOptions.length !== 1 || out.poppedOptions[0] !== correctOption) {
-    return { ok: false, why: `fired winning angle popped ${JSON.stringify(out.poppedOptions)}` };
+  if (out.selectedOption !== correctOption) {
+    return { ok: false, why: `fired winning angle selected ${out.selectedOption} of ${JSON.stringify(out.poppedOptions)}` };
   }
   return { ok: true };
 }

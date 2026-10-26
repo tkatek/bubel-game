@@ -39,6 +39,9 @@ export function makeSim(cols, clusters) {
 //   { landed:false }                                — fizzled (no legal cell)
 //   { landed:true, popped, poppedOptions, falls }   — popped > 0 means a
 //     match-group of 3+ burst; falls = bubbles that lost support after it.
+// Selection rule (matches game.beginResolve): when a popped group spans
+// several answer clusters, the chosen answer is the cluster the projectile
+// STRUCK (the cluster the player aimed at) — never an ambiguous pick.
 export function simulateShot(sim, angleDeg, color) {
   const rad = (angleDeg * Math.PI) / 180;
   const dir = { x: Math.cos(rad), y: -Math.sin(rad) };
@@ -55,12 +58,16 @@ export function simulateShot(sim, angleDeg, color) {
       const cell = sim.board.get(gr, gc);
       if (cell && cell.option != null) opts.add(cell.option);
     }
+    const hitCell = ev.type === 'bubble' && ev.hitCell ? sim.board.get(ev.hitCell.r, ev.hitCell.c) : null;
+    const struck = hitCell && hitCell.option != null ? hitCell.option
+      : (opts.size === 1 ? [...opts][0] : null); // ceiling landings: sole cluster, else unresolved
     for (const [gr, gc] of group) sim.board.remove(gr, gc);
     const falls = sim.board.dropUnsupported();
     return {
       landed: true,
       popped: group.length,
       poppedOptions: [...opts],
+      selectedOption: struck,
       clearedNeutral: opts.size === 0,
       falls: falls.length,
       cell: [r, c],
@@ -71,8 +78,10 @@ export function simulateShot(sim, angleDeg, color) {
 
 // One fan pass with the loaded colour: how many distinct aim windows each
 // option can be popped from (distinct landing cells + winning angle count),
-// and the first winning angle. Windows are what the LEVEL_CONFIG gate and
-// the dev harness measure.
+// and the first winning angle. A shot counts for the option it SELECTS (the
+// struck cluster), even when the popped group also swallowed a neighbour —
+// that is exactly what the live game resolves. Windows are what the
+// LEVEL_CONFIG gate and the dev harness measure.
 export function surveyDirectShots(sim, loadedColor, stepDeg = 1.5) {
   const windows = new Map(); // option -> Set of landing signatures
   const angles = new Map();  // option -> winning angle count
@@ -80,8 +89,8 @@ export function surveyDirectShots(sim, loadedColor, stepDeg = 1.5) {
   for (const deg of angleFan(stepDeg)) {
     const probe = sim.withBoard(sim.board.clone());
     const out = simulateShot(probe, deg, loadedColor);
-    if (!out.landed || out.popped === 0 || out.poppedOptions.length !== 1) continue;
-    const opt = out.poppedOptions[0];
+    if (!out.landed || out.popped === 0 || !out.selectedOption) continue;
+    const opt = out.selectedOption;
     if (!windows.has(opt)) windows.set(opt, new Set());
     windows.get(opt).add(out.cell.join(','));
     angles.set(opt, (angles.get(opt) || 0) + 1);

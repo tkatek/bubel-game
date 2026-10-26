@@ -138,3 +138,16 @@
   left: calc(50% + var(--bpe-cannon-half, 120px) + 12px);
   bottom: max(16px, calc(var(--bpe-muzzle-up, 80px) - 30px));
 }
+
+/* narrower desktop windows: trim chrome so long questions still breathe */
+@media (max-width: 1180px) {
+  #bpe-root[data-mode="desktop"] .bpe-header { gap: 10px; }
+  #bpe-root[data-mode="desktop"] .bpe-logo img { height: 46px; }
+  #bpe-root[data-mode="desktop"] .bpe-pill { min-width: 112px; padding-right: 10px; }
+  #bpe-root[data-mode="desktop"] .bpe-pill-value { font-size: 15px; }
+  #bpe-root[data-mode="desktop"] .bpe-settings { width: 54px; height: 54px; }
+  #bpe-root[data-mode="desktop"] .bpe-q-book { width: 46px; height: 46px; border-radius: 11px; }
+  #bpe-root[data-mode="desktop"] .bpe-q-book img { width: 30px; }
+  #bpe-root[data-mode="desktop"] .bpe-q-color { font-size: 12px; padding: 4px 9px 4px 5px; }
+  #bpe-root[data-mode="desktop"] .bpe-q-text { font-size: 19px; }
+}

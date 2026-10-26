@@ -32,12 +32,17 @@ function cellsOf(clusters) {
 }
 
 // One candidate pipeline — mirrors game.js buildPuzzle() attempt loop
-// (including the LEVEL_CONFIG gate knobs and the density retreat).
+// (LEVEL_CONFIG gate knobs, density retreat, hard fairness floor).
 function buildQuestion({ cols, level, q, qSeed: seed, loadedColor, optionsOrder }) {
   const letters = optionsOrder.map((o) => o.id);
   const cfg = configFor(level);
   const biasFor = (attempt) => (attempt < 5 ? 0.55 : attempt < 8 ? 0.3 : 0.08);
-  for (let attempt = 0; attempt < 10; attempt++) {
+  const winsOf = (gate) => letters.map((o) => gate.direct[o]?.angles ?? 0);
+  const meetsFloor = (gate) => gate && winsOf(gate).every((w) => w >= 2)
+    && (gate.direct[q.correct]?.angles ?? 0) >= 3;
+  let built = null;
+  let hardBuilt = null;
+  for (let attempt = 0; attempt < 10 && !built; attempt++) {
     const s = (seed + attempt * 7919) >>> 0;
     const puzzle = buildPuzzleBoard({ cols, level, options: letters, loadedColor, seed: s, obstacleBudget: cfg.obstacleBudget, densityBias: biasFor(attempt) });
     if (!puzzle) continue;
@@ -46,12 +51,15 @@ function buildQuestion({ cols, level, q, qSeed: seed, loadedColor, optionsOrder 
     const queue = buildAmmunitionQueue({ neutralGroups: puzzle.neutralGroups, loadedColor, seed: s });
     const gate = checkBoardSolvable({
       cols, clusters: puzzle.clusters, loadedColor, correctOption: q.correct, queue, options: letters,
-      minAngles: cfg.minDirectAngles,
+      minAngles: attempt < 5 ? cfg.minDirectAngles : 2,
     });
-    if (!gate.ok) continue;
-    return { puzzle, queue, gate, attempts: attempt + 1 };
+    if (!gate.ok) {
+      if (!hardBuilt && meetsFloor(gate)) hardBuilt = { puzzle, queue, gate, attempts: attempt + 1, hard: true };
+      continue;
+    }
+    built = { puzzle, queue, gate, attempts: attempt + 1 };
   }
-  return null;
+  return built || hardBuilt;
 }
 
 // End-to-end physics check: fire the solver's own winning angle and confirm

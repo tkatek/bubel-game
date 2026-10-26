@@ -245,9 +245,12 @@ const SHAPES = [
   [[0, 0], [1, 0], [1, 1]],
 ];
 
-// Anchor rows a cluster may start at: 0 = ceiling row, 2/3/4 = hanging mid
-// board (answer bubbles are support anchors, so these are stable).
-const ANCHOR_ROWS = [0, 0, 2, 3, 4];
+// Anchor rows a cluster may start at. Keeping clusters in the top two bands
+// matters for aim windows: a deep cluster shields the grooves of the cluster
+// above it (measured: row-0 strips behind row-3/4 clusters dropped from ~40
+// winning angles to ~3). Rows 0/2 leave every groove approachable from open
+// field; the full, deep look comes from the neutral rafts hanging below.
+const ANCHOR_ROWS = [0, 0, 2, 2];
 
 function clusterSlots(cols) {
   const slots = [];

@@ -281,7 +281,8 @@
   <noscript><div class="bpe-nojs">Bubble Pop English needs JavaScript to run. Please enable JavaScript and reload.</div></noscript>
 </div>
 
-<script>window.__bpeLog=[];window.addEventListener('error',function(e){window.__bpeLog.push('ERR:'+(e.message||e.error));});document.addEventListener('click',function(e){window.__bpeLog.push('click:'+(e.target&&e.target.id||e.target&&e.target.className||e.target&&e.target.tagName)+'@'+Math.round(performance.now()));},true);</script>
+<script>window.__bpeLog=[];window.addEventListener('error',function(e){window.__bpeLog.push('ERR:'+(e.message||e.error)+' @ '+(e.error&&e.error.stack||'').split('
+').slice(0,4).join(' | '));});document.addEventListener('click',function(e){window.__bpeLog.push('click:'+(e.target&&e.target.id||e.target&&e.target.className||e.target&&e.target.tagName)+'@'+Math.round(performance.now()));},true);</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

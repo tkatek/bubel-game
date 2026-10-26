@@ -68,33 +68,15 @@ export class Layout {
     this.placeOverlays();
   }
 
-  // DOM overlays positioned relative to the stage, outside the active board.
+  // DOM overlays: the next-preview and owl are CSS-positioned relative to
+  // the stage; layout only decides visibility.
   placeOverlays() {
     const st = this.stage.getBoundingClientRect();
-    const rootRect = this.root.getBoundingClientRect();
-    const rel = (el, x, y, w) => {
-      el.style.left = `${x - rootRect.left}px`;
-      el.style.top = `${y - rootRect.top}px`;
-      el.style.width = `${w}px`;
-      el.style.height = 'auto';
-    };
-    // desktop composition: preview sits beside the cannon (left), owl at the
-    // bottom-right corner. Hidden entirely in mobile composition (the dock
-    // holds the preview).
     if (this.mode === 'mobile') {
       this.nextWrap.style.display = 'none';
       this.owl.style.display = st.height > 460 ? '' : 'none';
-      this.owl.style.left = ''; this.owl.style.top = ''; this.owl.style.width = '';
       return;
     }
     this.nextWrap.style.display = '';
-    const pad = Math.max(10, st.width * 0.015);
-    const w = clampNum(st.width * 0.075, 54, 84);
-    rel(this.nextWrap, st.left + pad, st.bottom - w * 1.35 - pad, w);
-    const owlW = clampNum(st.width * 0.12, 70, 130);
-    this.owl.style.display = st.width > 560 ? '' : 'none';
-    rel(this.owl, st.right - owlW - pad, st.bottom - owlW * 0.95 - pad, owlW);
+    this.owl.style.display = st.width > 560 && st.height > 380 ? '' : 'none';
   }
-}
-
-function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

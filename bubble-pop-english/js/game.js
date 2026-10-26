@@ -48,12 +48,18 @@ export class Game {
     this.ui.setSoundIcons(this.save.sound);
     this.lastT = performance.now();
     this.raf = requestAnimationFrame(this.rafBound);
+    // Stall guard: some hosts (embedded webviews, hidden panes) throttle
+    // requestAnimationFrame to zero without firing visibilitychange. Keep the
+    // simulation alive — dt clamping makes catch-up frames safe.
+    this.stallGuard = setInterval(() => {
+      if (performance.now() - this.lastT > 250) this.frame(performance.now());
+    }, 120);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.pause('hidden');
     });
   }
 
-  stop() { cancelAnimationFrame(this.raf); }
+  stop() { cancelAnimationFrame(this.raf); clearInterval(this.stallGuard); }
 
   frame(now) {
     const dtRaw = Math.min((now - this.lastT) / 1000, MAX_FRAME_DT);

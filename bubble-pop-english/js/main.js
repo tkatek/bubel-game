@@ -39,6 +39,7 @@ async function boot() {
   const input = new InputController(canvas, game, layout);
   layout.start();
   game.start();
+  window.__bpeGame = game; // debug/testing handle
 
   // ---- button wiring (each gesture stays on its element; never fires shots) --
   const click = (id, fn) => qs(`#${id}`).addEventListener('click', (e) => { e.stopPropagation(); audio.play('click'); fn(); });

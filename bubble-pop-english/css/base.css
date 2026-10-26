@@ -84,6 +84,7 @@ html:has(#bpe-root), body:has(#bpe-root) { margin: 0; padding: 0; overflow: hidd
    wood/navy/gold art style; dynamic HTML stays above. */
 .bpe-panel {
   position: relative;
+  box-sizing: border-box;
   border-radius: 20px;
   padding: 5px;
   background: linear-gradient(180deg, #f3b95e 0%, #d78f3c 42%, #a5641f 100%);

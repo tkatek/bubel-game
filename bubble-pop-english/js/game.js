@@ -23,7 +23,7 @@ const FEEDBACK_WRONG = 1.5;
 const RESOLVE_POP = 0.38;         // pop animation before outcome evaluation
 const CLEAR_BONUS = 30;           // neutral group popped (puzzle bonus)
 const FALL_BONUS = 10;            // per bubble disconnected by a valid pop
-const BOARD_ATTEMPTS = 10;        // generation candidates before the fallback
+const BOARD_ATTEMPTS = 12;        // generation candidates before the fallback
 
 function cellsOf(clusters) {
   return clusters.flatMap((cl) => cl.cells.map(([r, c]) => ({ r, c, color: cl.color, option: cl.option ?? null })));

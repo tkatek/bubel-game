@@ -339,10 +339,18 @@ function slotCompatible(cols, a, b) {
 }
 
 // Pick four mutually-compatible cluster slots, one per horizontal zone where
-// possible, mixing ceiling-anchored and staggered hanging placements. Falls
-// back to the curated physics-audited TEMPLATES family when no procedural
-// packing fits.
+// possible, mixing ceiling-anchored and staggered hanging placements. Every
+// third pick uses the curated physics-audited TEMPLATES family instead —
+// its open-groove layouts occasionally pass the gate where the zoned
+// packing cannot, so rotating it in raises the candidate diversity. Falls
+// back to that same curated family when no procedural packing fits.
 export function pickClusterLayout(cols, rng) {
+  if (rng() < 0.3) {
+    const base = TEMPLATES[cols] || TEMPLATES[11];
+    const mirror = rng() < 0.5;
+    const m = mirror ? mirrorCell(cols) : (x) => x;
+    return base.map((cells) => cells.map(m));
+  }
   const slots = clusterSlots(cols);
   for (let attempt = 0; attempt < 60; attempt++) {
     const byZone = new Map([0, 1, 2, 3].map((z) => [z, slots.filter((s) => s.zone === z)]));

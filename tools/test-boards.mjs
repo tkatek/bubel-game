@@ -45,7 +45,7 @@ function buildQuestion({ cols, level, q, qSeed: seed, loadedColor, optionsOrder 
   let built = null;
   let hardBuilt = null;
   let looseBuilt = null;
-  for (let attempt = 0; attempt < 10 && !built; attempt++) {
+  for (let attempt = 0; attempt < 12 && !built; attempt++) {
     const s = (seed + attempt * 7919) >>> 0;
     const puzzle = buildPuzzleBoard({ cols, level, options: letters, loadedColor, seed: s, obstacleBudget: cfg.obstacleBudget, densityBias: biasFor(attempt) });
     if (!puzzle) continue;

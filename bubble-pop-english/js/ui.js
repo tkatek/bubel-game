@@ -46,6 +46,9 @@ export class UI {
       btnPlayLabel: q('btnPlayLabel'),
       puPopover: q('puPopover'), btnPuDock: q('btnPuDock'), puBadgeDock: q('puBadgeDock'),
       soundMenuIcon: q('soundMenuIcon'), soundPauseIcon: q('soundPauseIcon'),
+      audioPopover: q('audioPopover'),
+      musicToggle: q('musicToggle'), musicVolume: q('musicVolume'), musicRow: q('musicRow'),
+      sfxToggle: q('sfxToggle'), sfxVolume: q('sfxVolume'), sfxRow: q('sfxRow'),
     };
     // Dock power-up row badges are attribute-addressed so every rendered
     // instance (rail, popover, dock row) stays in sync from one state source.
@@ -334,6 +337,33 @@ export class UI {
     this.el.puPopover.hidden = !open;
     this.el.puPopover.style.display = open ? '' : 'none';
     this.el.btnPuDock.setAttribute('aria-expanded', String(open));
+  }
+
+  // ---- audio settings panel (Music / SFX sliders + mutes) ------------------
+  toggleAudioPanel(open) {
+    this.el.audioPopover.hidden = !open;
+    this.el.audioPopover.style.display = open ? '' : 'none';
+  }
+
+  // Mirror the persisted audio prefs into the panel controls. Slider tracks
+  // repaint through the --fill custom property used by the CSS gradient.
+  syncAudioPanel(save) {
+    if (!this.el.musicToggle) return;
+    const musicOn = save.musicOn !== false;
+    const sfxOn = save.sound !== false;
+    const musicVol = Math.round((save.musicVolume != null ? save.musicVolume : 0.35) * 100);
+    const sfxVol = Math.round((save.sfxVolume != null ? save.sfxVolume : 0.9) * 100);
+    this.el.musicToggle.checked = musicOn;
+    this.el.sfxToggle.checked = sfxOn;
+    this.el.musicVolume.value = musicVol;
+    this.el.sfxVolume.value = sfxVol;
+    this.el.musicVolume.disabled = !musicOn;
+    this.el.sfxVolume.disabled = !sfxOn;
+    this.el.musicRow.classList.toggle('is-off', !musicOn);
+    this.el.sfxRow.classList.toggle('is-off', !sfxOn);
+    for (const [range, on] of [[this.el.musicVolume, musicOn], [this.el.sfxVolume, sfxOn]]) {
+      range.style.setProperty('--fill', on ? `${range.value}%` : '0%');
+    }
   }
 }
 

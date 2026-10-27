@@ -104,7 +104,9 @@ export class Game {
         this.acc += dt;
         while (this.acc >= FIXED_DT && st.phase === PHASE.PROJECTILE_FLYING) {
           this.acc -= FIXED_DT;
+          const bouncesBefore = st.shot.bounces || 0;   // audio-only: wall-reflection cue
           const ev = stepProjectile(this.world, st.shot, FIXED_DT);
+          if (st.shot && (st.shot.bounces || 0) > bouncesBefore) this.audio.play('bounce');
           if (ev) { this.beginResolve(ev); break; }
         }
         break;
@@ -397,6 +399,7 @@ export class Game {
         st.go(PHASE.RESOLVING);
         this.resolveT = RESOLVE_POP;
         this.audio.play('pop', { combo: st.combo, big: group.length > 4 });
+        if (falls.length > 0) this.audio.play('chain', { delay: 0.14, volume: 0.9 }); // chain reaction cascade
         return;
       }
       // Ceiling landing into a multi-cluster group with no struck cell:
@@ -421,10 +424,12 @@ export class Game {
       st.go(PHASE.RESOLVING);
       this.resolveT = RESOLVE_POP;
       this.audio.play('clear');
+      if (falls.length > 0) this.audio.play('chain', { delay: 0.14, volume: 0.8 });
       return;
     }
 
     // genuine miss: projectile attached without a match — remove it, restore
+    this.audio.play('stick'); // soft contact tock on the bubble it landed on
     this.pendingOutcome = { kind: 'miss' };
     st.go(PHASE.RESOLVING);
     this.resolveT = RESOLVE_POP * 0.6;
@@ -502,6 +507,7 @@ export class Game {
         this.feedbackT = Math.max(FEEDBACK_CORRECT, explainMs / 1000);
         this.feedbackKind = { correct: true, gain: gain + bonus, explain: st.question.explain };
         this.audio.play('correct', { combo: st.combo });
+        if (st.combo >= 2) this.audio.play('combo', { combo: st.combo, delay: 0.32, volume: 0.85 }); // streak sparkle on top
         this.renderer.spawnFloater(out.at, [`+${gain + bonus}`, ...tags], '#ffe27a');
         this.renderer.kick(1 + 0.35 * Math.min(3, tags.length));
         this.ui.owlMood('happy');
@@ -667,7 +673,7 @@ export class Game {
     if (st.powerups[kind] <= 0) return;
     if (kind === 'rainbow') {
       st.rainbowArmed = !st.rainbowArmed; // toggling back refunds nothing but also isn't consumed
-      this.audio.play('click');
+      this.audio.play(st.rainbowArmed ? 'powerup' : 'click');
       this.ui.toast(st.rainbowArmed ? 'Rainbow armed' : 'Rainbow put away',
         st.rainbowArmed ? 'Your next bubble matches any colour.' : 'Back to the normal bubble.', 1200);
     } else if (kind === 'heart') {
@@ -680,17 +686,25 @@ export class Game {
     } else if (kind === 'aim') {
       st.aimBoost = true;
       st.powerups.aim--;
-      this.audio.play('click');
+      this.audio.play('powerup', { rate: 1.06 }); // slightly brighter than rainbow arm
       this.ui.toast('Eagle eye!', 'Longer guide with a predicted landing for this question.', 1400);
     }
     this.ui.renderHud(st);
   }
 
+  // Quick mute (sound buttons still reflect the SFX flag). Full Music/SFX
+  // volume mixing lives in the audio panel via setAudioPref().
   toggleSound() {
-    this.save.sound = !this.save.sound;
-    this.audio.enabled = this.save.sound;
+    this.setAudioPref('sound', !this.save.sound);
+  }
+
+  // Change one audio preference, persist it and push it live to the manager.
+  setAudioPref(key, value) {
+    this.save[key] = value;
     persist(this.save);
+    this.audio.applySettings(this.save);
     this.ui.setSoundIcons(this.save.sound);
+    if (this.ui.syncAudioPanel) this.ui.syncAudioPanel(this.save);
   }
 
   // ---- resize ---------------------------------------------------------------

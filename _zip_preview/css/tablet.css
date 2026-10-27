@@ -1,0 +1,67 @@
+/* ============================================================
+   Tablet + compact-landscape tuning.
+   Portrait tablets run the mobile composition with
+   data-device="tablet" (roomier type, full power-up row); short
+   landscape viewports run the compact desktop composition.
+   Touch-sized targets everywhere.
+   ============================================================ */
+
+/* ---- tablet portrait: mobile composition with more air ---- */
+#bpe-root[data-mode="mobile"][data-device="tablet"] {
+  --bpe-pad: 14px;
+}
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-q-text { font-size: 19px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-q-body .bpe-q-type { font-size: 10.5px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-q-body .bpe-q-context { font-size: 15px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-q-opts .bpe-q-opt { font-size: 15.5px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-q-sub { font-size: 14.5px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-badge { font-size: 15px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-score { font-size: 15px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-score img { width: 19px; height: 19px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-hearts-m img { width: 28px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-top { min-height: 52px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-pause { width: 52px; height: 52px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-pu { width: 54px; height: 54px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-next { width: 60px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-question { padding: 10px 16px 12px; border-radius: 16px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-q-book { width: 36px; }
+/* room to spare: show the whole power-up row instead of the popover trigger */
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-m-pu-row { display: flex; gap: 10px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] #btnPuDock { display: none; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-pu-dock { width: 52px; height: 52px; }
+#bpe-root[data-mode="mobile"][data-device="tablet"] .bpe-level-grid { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+/* ---- short landscape (compact desktop composition) ---- */
+#bpe-root[data-mode="tablet"][data-orient="landscape"] {
+  --bpe-rail-w: 170px;
+  --bpe-pu-rail-w: 96px;
+  --bpe-pad: 8px;
+  --bpe-header-h: 60px;
+}
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-header { min-height: 64px; gap: 10px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-logo img { height: 34px; }
+/* shallow header: slim pills + no context block so the question keeps width */
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-pill { min-width: 106px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-pill-ico { width: 22px; height: 22px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-pill-value { font-size: 14.5px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-settings { width: 44px; height: 44px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-text { font-size: 15px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-type { font-size: 9px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-context { display: none; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-opts .bpe-q-opt { font-size: 13px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color { font-size: 11.5px; padding: 4px 9px 4px 5px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-color-dot { width: 16px; height: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-question { min-height: 56px; padding: 5px; gap: 9px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book { width: 40px; height: 40px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-q-book img { width: 26px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-scorebox-content { padding: 5px 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-score-value { font-size: 18px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-num { font-size: 26px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-quest { font-size: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-timer { font-size: 16px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-content { gap: 6px; padding: 12px 12px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-status-block { gap: 2px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-seg { width: 20px; height: 7px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-hearts img { width: 22px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-pu { width: 46px; height: 46px; }
+#bpe-root[data-mode="tablet"][data-orient="landscape"] .bpe-powerups-content { gap: 10px; padding: 12px 8px; }

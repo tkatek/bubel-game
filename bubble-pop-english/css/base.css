@@ -478,6 +478,66 @@ html:has(#bpe-root), body:has(#bpe-root) { margin: 0; padding: 0; overflow: hidd
 .bpe-popover-row { display: flex; gap: 18px; }
 .bpe-pu-pop { display: flex; flex-direction: column; align-items: center; }
 .bpe-pu-pop .bpe-pu-badge { top: -7px; }
+/* the audio panel launches from inside the menu/pause screens, so it must
+   render above the screens layer instead of the gameplay popover layer */
+.bpe-popover-audio { z-index: var(--bpe-z-audio); }
+
+/* ---------- audio settings (separate Music / SFX mixing) ---------- */
+.bpe-audio-card { min-width: min(320px, calc(100vw - 48px)); align-items: stretch; }
+.bpe-audio-row {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px;
+  background: rgba(7, 22, 44, 0.5);
+  border: 2px solid rgba(255, 222, 130, 0.28);
+  border-radius: var(--bpe-r-md);
+  transition: opacity 0.15s;
+}
+.bpe-audio-row.is-off { opacity: 0.55; }
+.bpe-audio-head { display: flex; align-items: center; gap: 10px; color: var(--bpe-cream); font-weight: 700; font-size: 15px; }
+.bpe-audio-head img { width: 20px; height: 20px; }
+.bpe-audio-head span { flex: 1; }
+.bpe-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex: none; }
+.bpe-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.bpe-switch-track {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: rgba(10, 37, 67, 0.9);
+  border: 2px solid rgba(255, 222, 130, 0.4);
+  transition: background 0.18s, border-color 0.18s;
+  pointer-events: none;
+}
+.bpe-switch-track::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bpe-cream);
+  box-shadow: 0 1px 3px rgba(4, 16, 34, 0.6);
+  transition: transform 0.18s var(--bpe-ease-pop);
+}
+.bpe-switch input:checked + .bpe-switch-track { background: var(--bpe-blue); border-color: var(--bpe-gold); }
+.bpe-switch input:checked + .bpe-switch-track::after { transform: translateX(20px); }
+.bpe-switch input:focus-visible + .bpe-switch-track { outline: 2px solid var(--bpe-cyan); outline-offset: 2px; }
+.bpe-range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--bpe-gold) var(--fill, 50%), rgba(10, 37, 67, 0.9) var(--fill, 50%));
+  border: 2px solid rgba(255, 222, 130, 0.35);
+  outline: none; cursor: pointer;
+}
+.bpe-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #ffffff, var(--bpe-cream) 65%);
+  border: 2px solid var(--bpe-gold-deep);
+  box-shadow: 0 2px 6px rgba(4, 16, 34, 0.6);
+}
+.bpe-range::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #ffffff, var(--bpe-cream) 65%);
+  border: 2px solid var(--bpe-gold-deep);
+  box-shadow: 0 2px 6px rgba(4, 16, 34, 0.6);
+}
+.bpe-range:disabled { opacity: 0.5; cursor: default; }
+.bpe-audio-note { margin: 0; font-size: 12.5px; color: var(--bpe-cyan); opacity: 0.85; text-align: center; }
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {

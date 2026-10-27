@@ -40,8 +40,10 @@ async function boot() {
   ui.setLoad(1, 'Ready!');
 
   const audio = new AudioOut();
+  audio.preload(); // fetch + decode samples in parallel with artwork — never gates boot
   const layout = new Layout(root, canvas, renderer);
   const game = new Game({ root, ui, renderer, layout, audio });
+  audio.applySettings(game.save); // persisted Music/SFX mixer state
   const input = new InputController(canvas, game, layout);
   layout.start();
   game.start();
@@ -53,8 +55,9 @@ async function boot() {
   click('btnLevels', () => game.openLevels());
   click('btnHowTo', () => ui.screen('howto'));
   click('btnHowToBack', () => ui.screen(game.state.inGameplay() ? 'game' : 'menu'));
-  click('btnSoundMenu', () => game.toggleSound());
-  click('btnSoundPause', () => game.toggleSound());
+  click('btnSoundMenu', () => ui.toggleAudioPanel(true));
+  click('btnSoundPause', () => ui.toggleAudioPanel(true));
+  click('btnAudioClose', () => ui.toggleAudioPanel(false));
   click('btnPauseDesktop', () => game.pause());
   click('btnPauseMobile', () => game.pause());
   click('btnResume', () => game.resume());
@@ -75,6 +78,22 @@ async function boot() {
       game.usePowerup(btn.dataset.pu);
     });
   }
+
+  // ---- audio panel controls (live Music / SFX mixing) ------------------------
+  ui.syncAudioPanel(game.save);
+  const bindSlider = (id, pref) => {
+    const slider = qs(`#${id}`);
+    slider.addEventListener('input', () => {
+      game.setAudioPref(pref, slider.value / 100); // manager ramps live while dragging
+    });
+    slider.addEventListener('change', () => {
+      audio.play('pop', { volume: 0.65 }); // audible confirmation at the new level
+    });
+  };
+  bindSlider('musicVolume', 'musicVolume');
+  bindSlider('sfxVolume', 'sfxVolume');
+  qs('#musicToggle').addEventListener('change', (e) => game.setAudioPref('musicOn', e.target.checked));
+  qs('#sfxToggle').addEventListener('change', (e) => game.setAudioPref('sound', e.target.checked));
 
   // Menu "Play" label: continue at the furthest unlocked level
   ui.el.btnPlayLabel.textContent = game.save.unlocked > 1 ? `Play — Level ${game.save.unlocked}` : 'Play';

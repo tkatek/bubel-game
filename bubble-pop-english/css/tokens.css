@@ -52,6 +52,7 @@
   --bpe-z-chrome: 40;
   --bpe-z-toast: 70;
   --bpe-z-popover: 80;
+  --bpe-z-audio: 95;      /* audio panel opens from the menu/pause screens, so it must sit above the screens layer */
   --bpe-z-screens: 90;
   --bpe-z-loading: 100;
 

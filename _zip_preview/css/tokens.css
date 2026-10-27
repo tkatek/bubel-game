@@ -1,0 +1,65 @@
+/* ============================================================
+   Bubble Pop English — design tokens
+   All styles are scoped under #bpe-root so the game can be
+   embedded inside the Boston English Center site or an iframe
+   without leaking styles in either direction.
+   ============================================================ */
+#bpe-root {
+  /* palette — sampled from the painted asset pack */
+  --bpe-navy: #10365f;
+  --bpe-navy-deep: #0a2543;
+  --bpe-navy-soft: #1d3f70;
+  --bpe-blue: #2f7fd6;
+  --bpe-cyan: #7fd8ff;
+  --bpe-gold: #ffce3c;
+  --bpe-gold-deep: #f0a722;
+  --bpe-gold-glow: #ffe9a3;
+  --bpe-wood: #a9713d;
+  --bpe-wood-deep: #8a5a2f;
+  --bpe-wood-dark: #4c2f14;
+  --bpe-cream: #fff3d6;
+  --bpe-white: #ffffff;
+  --bpe-danger: #ff5a5f;
+  --bpe-danger-deep: #d92440;
+  --bpe-ok: #6BCB77;
+  --bpe-ink: #0c2547;
+
+  /* bubble palette (mirrored in js/asset-layout.js COLORS) */
+  --bpe-c-cherry: #ff5a5f;
+  --bpe-c-orange: #ff9f43;
+  --bpe-c-lemon: #ffd93d;
+  --bpe-c-lime: #6BCB77;
+  --bpe-c-sky: #4D96FF;
+  --bpe-c-grape: #9b5de5;
+
+  /* typography */
+  --bpe-font: 'Trebuchet MS', 'Segoe UI', Verdana, 'Helvetica Neue', system-ui, sans-serif;
+
+  /* radii */
+  --bpe-r-sm: 10px;
+  --bpe-r-md: 16px;
+  --bpe-r-lg: 22px;
+  --bpe-r-xl: 30px;
+
+  /* shadows */
+  --bpe-shadow: 0 4px 14px rgba(6, 24, 48, 0.45);
+  --bpe-shadow-lg: 0 10px 30px rgba(6, 24, 48, 0.55);
+  --bpe-inset-light: inset 0 2px 0 rgba(255, 255, 255, 0.28);
+
+  /* z layers */
+  --bpe-z-bg: 0;
+  --bpe-z-shell: 10;
+  --bpe-z-chrome: 40;
+  --bpe-z-toast: 70;
+  --bpe-z-popover: 80;
+  --bpe-z-audio: 95;      /* audio panel opens from the menu/pause screens, so it must sit above the screens layer */
+  --bpe-z-screens: 90;
+  --bpe-z-loading: 100;
+
+  /* motion */
+  --bpe-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --bpe-ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --bpe-t-fast: 0.18s;
+  --bpe-t-med: 0.32s;
+  --bpe-t-slow: 0.55s;
+}

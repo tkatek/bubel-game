@@ -195,6 +195,37 @@
     </div>
   </div>
 
+  <!-- ===================== AUDIO SETTINGS POPOVER ===================== -->
+  <div class="bpe-popover bpe-popover-audio" id="audioPopover" hidden>
+    <div class="bpe-popover-card bpe-audio-card" role="dialog" aria-label="Sound settings">
+      <div class="bpe-popover-title">Sound</div>
+      <div class="bpe-audio-row" id="musicRow">
+        <div class="bpe-audio-head">
+          <img src="assets/icons/icon-sound-on.svg" alt="" draggable="false">
+          <span>Music</span>
+          <label class="bpe-switch">
+            <input type="checkbox" id="musicToggle" checked aria-label="Music on or off">
+            <span class="bpe-switch-track"></span>
+          </label>
+        </div>
+        <input type="range" class="bpe-range" id="musicVolume" min="0" max="100" step="1" value="35" aria-label="Music volume">
+      </div>
+      <div class="bpe-audio-row" id="sfxRow">
+        <div class="bpe-audio-head">
+          <img src="assets/icons/icon-sound-on.svg" alt="" draggable="false">
+          <span>Sound Effects</span>
+          <label class="bpe-switch">
+            <input type="checkbox" id="sfxToggle" checked aria-label="Sound effects on or off">
+            <span class="bpe-switch-track"></span>
+          </label>
+        </div>
+        <input type="range" class="bpe-range" id="sfxVolume" min="0" max="100" step="1" value="90" aria-label="Sound effects volume">
+      </div>
+      <p class="bpe-audio-note">Music stays soft — reading always comes first.</p>
+      <button class="bpe-btn bpe-btn-small" id="btnAudioClose" type="button">Done</button>
+    </div>
+  </div>
+
   <!-- ===================== TOAST ===================== -->
   <div class="bpe-toast" id="toast" role="status" aria-live="polite" hidden>
     <div class="bpe-toast-title" id="toastTitle"></div>
